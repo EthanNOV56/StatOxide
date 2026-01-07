@@ -1,0 +1,10 @@
+[package]
+name = "so-stats"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+
+[dependencies]
