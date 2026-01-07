@@ -1,4 +1,4 @@
-use crate::data::DataError;
+use crate::{data::DataError, formula::error::FormulaError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum StatOxideError {
@@ -15,5 +15,5 @@ pub enum StatOxideError {
     Model(String),
 
     #[error("Formula parsing error: {0}")]
-    Formula(String),
+    Formula(#[from] FormulaError),
 }
