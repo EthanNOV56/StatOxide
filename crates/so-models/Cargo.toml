@@ -8,3 +8,14 @@ license.workspace = true
 readme.workspace = true
 
 [dependencies]
+ndarray.workspace = true
+thiserror.workspace = true
+serde = { version="1.0.228", features=['derive']}
+so-core = { path = "../so-core" }
+statrs = "0.18.0"
+ndarray-linalg = {version = "0.18.0", features = ["openblas"]}
+approx = "0.5.1"
+rand.workspace = true
+serde_json = "1.0.149"
+rand_distr = "0.5.1"
+faer.workspace = true

@@ -3,14 +3,13 @@
 //! This module provides formula parsing similar to R's formula syntax,
 //! used for specifying statistical models.
 
-use crate::{
-    data::{DataFrame, Matrix, Series},
-    formula::error::{FormulaError, FormulaResult},
-};
+use crate::data::{DataFrame, Matrix, Series};
+pub use crate::formula::error::{FormulaError, FormulaResult};
+
 use std::collections::HashSet;
 use std::str::FromStr;
 
-pub(super) mod error;
+pub mod error;
 mod expander;
 mod parser;
 mod term;

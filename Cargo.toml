@@ -13,4 +13,7 @@ license = "MIT"
 readme = "README.md"
 
 [workspace.dependencies]
-so-core = { path = "../so-core" }
+ndarray = {version = "0.17.1", features = ["blas"]}
+thiserror = "2.0.17"
+rand = "0.9.2"
+faer = "0.23.2"
