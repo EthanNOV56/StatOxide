@@ -13,10 +13,3 @@ rand.workspace = true
 thiserror.workspace = true
 ndarray.workspace = true
 faer.workspace = true
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-anyhow = "1.0"
-nom = "7.1"
-
-[dev-dependencies]
-proptest = "1.3"
