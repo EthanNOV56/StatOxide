@@ -219,8 +219,8 @@ impl ADFTest {
         let XtX = X.t().dot(X);
         let Xty = X.t().dot(y);
         
-        let beta = linalg::solve(&XtX, &Xty)
-            .map_err(|e| Error::NumericalError(format!("ADF regression failed: {}", e)))?;
+        let beta = so_linalg::solve(&XtX, &Xty)
+            .map_err(|e| Error::LinearAlgebraError(format!("ADF regression failed: {}", e)))?;
         
         // Calculate residuals and variance
         let y_hat = X.dot(&beta);
@@ -247,8 +247,8 @@ impl ADFTest {
         let XtX = X.t().dot(X);
         let Xty = X.t().dot(y);
         
-        let beta = linalg::solve(&XtX, &Xty)
-            .map_err(|e| Error::NumericalError(format!("Regression failed: {}", e)))?;
+        let beta = so_linalg::solve(&XtX, &Xty)
+            .map_err(|e| Error::LinearAlgebraError(format!("Regression failed: {}", e)))?;
         
         let y_hat = X.dot(&beta);
         let residuals = y - &y_hat;

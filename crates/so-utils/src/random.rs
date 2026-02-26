@@ -2,39 +2,45 @@
 
 use ndarray::{Array1, Array2};
 use rand::{Rng, SeedableRng};
-use rand::distributions::{Distribution, Uniform, Normal as RandNormal};
 use rand::rngs::StdRng;
 
 /// Generate random array from uniform distribution
 pub fn random_uniform_array(n: usize, low: f64, high: f64) -> Array1<f64> {
     let mut rng = rand::thread_rng();
-    let dist = Uniform::new(low, high);
     
-    Array1::from_iter((0..n).map(|_| dist.sample(&mut rng)))
+    Array1::from_iter((0..n).map(|_| rng.r#gen_range(low..high)))
 }
 
 /// Generate random array from normal distribution
 pub fn random_normal_array(n: usize, mean: f64, std_dev: f64) -> Array1<f64> {
     let mut rng = rand::thread_rng();
-    let dist = RandNormal::new(mean, std_dev).unwrap();
     
-    Array1::from_iter((0..n).map(|_| dist.sample(&mut rng)))
+    // Generate standard normal using Box-Muller transform
+    Array1::from_iter((0..n).map(|_| {
+        let u1: f64 = rng.r#gen::<f64>();
+        let u2: f64 = rng.r#gen::<f64>();
+        let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        mean + std_dev * z
+    }))
 }
 
 /// Generate random 2D array from uniform distribution
 pub fn random_uniform_matrix(rows: usize, cols: usize, low: f64, high: f64) -> Array2<f64> {
     let mut rng = rand::thread_rng();
-    let dist = Uniform::new(low, high);
     
-    Array2::from_shape_fn((rows, cols), |_| dist.sample(&mut rng))
+    Array2::from_shape_fn((rows, cols), |_| rng.r#gen_range(low..high))
 }
 
 /// Generate random 2D array from normal distribution
 pub fn random_normal_matrix(rows: usize, cols: usize, mean: f64, std_dev: f64) -> Array2<f64> {
     let mut rng = rand::thread_rng();
-    let dist = RandNormal::new(mean, std_dev).unwrap();
     
-    Array2::from_shape_fn((rows, cols), |_| dist.sample(&mut rng))
+    Array2::from_shape_fn((rows, cols), |_| {
+        let u1: f64 = rng.r#gen::<f64>();
+        let u2: f64 = rng.r#gen::<f64>();
+        let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+        mean + std_dev * z
+    })
 }
 
 /// Generate random permutation of indices
@@ -43,7 +49,7 @@ pub fn random_permutation(n: usize) -> Vec<usize> {
     let mut indices: Vec<usize> = (0..n).collect();
     
     for i in 0..n {
-        let j = rng.gen_range(i..n);
+        let j = rng.r#gen_range(i..n);
         indices.swap(i, j);
     }
     
@@ -55,7 +61,7 @@ pub fn shuffle_array<T>(arr: &mut [T]) {
     let mut rng = rand::thread_rng();
     
     for i in 0..arr.len() {
-        let j = rng.gen_range(i..arr.len());
+        let j = rng.r#gen_range(i..arr.len());
         arr.swap(i, j);
     }
 }
@@ -66,7 +72,7 @@ pub fn shuffle_rows(matrix: &mut Array2<f64>) {
     let n_rows = matrix.nrows();
     
     for i in 0..n_rows {
-        let j = rng.gen_range(i..n_rows);
+        let j = rng.r#gen_range(i..n_rows);
         if i != j {
             let row_i = matrix.row(i).to_owned();
             let row_j = matrix.row(j).to_owned();
@@ -85,7 +91,7 @@ pub fn bootstrap_sample(data: &Array2<f64>, n_samples: usize) -> Array2<f64> {
     let mut sample = Array2::zeros((n_samples, n_cols));
     
     for i in 0..n_samples {
-        let idx = rng.gen_range(0..n_rows);
+        let idx = rng.r#gen_range(0..n_rows);
         sample.row_mut(i).assign(&data.row(idx));
     }
     
@@ -141,14 +147,17 @@ impl SeededRng {
     
     /// Generate random uniform array
     pub fn uniform_array(&mut self, n: usize, low: f64, high: f64) -> Array1<f64> {
-        let dist = Uniform::new(low, high);
-        Array1::from_iter((0..n).map(|_| dist.sample(&mut self.rng)))
+        Array1::from_iter((0..n).map(|_| self.rng.r#gen_range(low..high)))
     }
     
     /// Generate random normal array
     pub fn normal_array(&mut self, n: usize, mean: f64, std_dev: f64) -> Array1<f64> {
-        let dist = RandNormal::new(mean, std_dev).unwrap();
-        Array1::from_iter((0..n).map(|_| dist.sample(&mut self.rng)))
+        Array1::from_iter((0..n).map(|_| {
+            let u1: f64 = self.rng.r#gen::<f64>();
+            let u2: f64 = self.rng.r#gen::<f64>();
+            let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
+            mean + std_dev * z
+        }))
     }
 }
 
@@ -163,7 +172,7 @@ pub fn random_correlation_matrix(n: usize, eigenvalues: &[f64]) -> Option<Array2
     let mut A = Array2::zeros((n, n));
     for i in 0..n {
         for j in 0..n {
-            A[(i, j)] = rng.gen::<f64>() - 0.5;
+            A[(i, j)] = rng.r#gen::<f64>() - 0.5;
         }
     }
     

@@ -675,8 +675,8 @@ impl HodrickPrescottFilter {
         a += &(self.lambda * &dtd);
         
         // Solve linear system Aτ = y
-        let trend_values = linalg::solve(&a, y)
-            .map_err(|e| Error::ModelError(format!("HP filter solve failed: {}", e)))?;
+        let trend_values = so_linalg::solve(&a, y)
+            .map_err(|e| Error::DataError(format!("HP filter solve failed: {}", e)))?;
         
         // Cyclical component: c = y - τ
         let cycle_values = y - &trend_values;

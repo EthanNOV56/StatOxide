@@ -140,6 +140,7 @@ pub struct RobustRegressionResults {
 }
 
 /// M-estimator for robust regression
+#[derive(Clone)]
 pub struct MEstimator {
     loss: LossFunction,
     max_iter: usize,
@@ -281,7 +282,7 @@ impl MEstimator {
             
             // Check convergence
             let beta_diff = (&beta - &beta_prev).mapv(|x| x.abs());
-            let max_diff = beta_diff.iter().fold(0.0, |a, &b| a.max(b));
+            let max_diff = beta_diff.iter().fold(0.0, |a, &b| f64::max(a, b));
             converged = max_diff < self.tol;
         }
         
@@ -383,11 +384,11 @@ impl MEstimator {
         let scaled_residuals = &residuals / scale;
         
         // Compute empirical influence function
-        let mut influence = Array1::zeros(p);
+        let mut influence = Array1::<f64>::zeros(p);
         for i in 0..n {
             let psi = self.loss.psi(scaled_residuals[i]);
             let xi = X.row(i);
-            influence = influence + &(xi * psi);
+            influence = influence + xi.mapv(|x| x * psi);
         }
         
         // Compute sandwich variance estimator
@@ -395,7 +396,7 @@ impl MEstimator {
         for i in 0..n {
             let psi = self.loss.psi(scaled_residuals[i]);
             let xi = X.row(i);
-            let outer = xi.t().dot(&xi) * psi * psi;
+            let outer = xi.t().dot(&xi).to_owned() * psi * psi;
             sandwich = sandwich + outer;
         }
         
@@ -475,14 +476,9 @@ impl LeastTrimmedSquares {
         
         for _ in 0..n_subsets {
             // Random subset of size p+1
-            let mut indices: Vec<usize> = (0..n).collect();
-            rand::seq::index::sample(&mut rng, n, p + 1)
-                .iter()
-                .for_each(|i| indices.swap(i, rand::random::<usize>() % (p + 1)));
-            
-            let subset_indices = &indices[..(p + 1)];
-            let X_subset = X.select(ndarray::Axis(0), subset_indices);
-            let y_subset = y.select(ndarray::Axis(0), subset_indices);
+            let subset_indices = rand::seq::index::sample(&mut rng, n, p + 1).into_vec();
+            let X_subset = X.select(ndarray::Axis(0), &subset_indices);
+            let y_subset = y.select(ndarray::Axis(0), &subset_indices);
             
             // Fit on subset
             if let Ok(beta) = solve(&X_subset.t().dot(&X_subset), &X_subset.t().dot(&y_subset)) {

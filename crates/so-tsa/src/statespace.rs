@@ -280,7 +280,7 @@ impl StateSpaceModel {
             let pred_cov = filter_results.predicted_state_covs.slice(ndarray::s![t+1, .., ..]);
             let filtered_cov = filter_results.filtered_state_covs.slice(ndarray::s![t, .., ..]);
             
-            let pred_cov_inv = linalg::inv(&pred_cov.to_owned()).unwrap_or_else(|_| pred_cov.to_owned());
+            let pred_cov_inv = so_linalg::inv(&pred_cov.to_owned()).unwrap_or_else(|_| pred_cov.to_owned());
             smoother_gain.assign(&filtered_cov.dot(&self.transition_matrix.t()).dot(&pred_cov_inv));
             
             // Smoothed state

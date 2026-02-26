@@ -348,7 +348,7 @@ impl GARCH {
             iteration += 1;
         }
         
-        Err(Error::ModelError(
+        Err(Error::DataError(
             format!("GARCH optimization did not converge after {} iterations", self.config.max_iter)
         ))
     }
@@ -359,7 +359,7 @@ impl GARCH {
         residuals: &Array1<f64>,
         params: &Array1<f64>,
     ) -> (f64, Array1<f64>) {
-        let _n = residuals.len();
+        let n = residuals.len();
         let order = self.config.order;
         
         // Extract parameters
@@ -441,7 +441,7 @@ impl GARCH {
             Array1::zeros(0)
         };
         
-        let _df = match self.config.distribution {
+        let df = match self.config.distribution {
             GARCHDistribution::Normal => None,
             GARCHDistribution::StudentsT(_) => Some(params[params.len() - 1]),
             GARCHDistribution::GED(_) => Some(params[params.len() - 1]),
@@ -458,7 +458,7 @@ impl GARCH {
         arch_coef: &Array1<f64>,
         garch_coef: &Array1<f64>,
     ) -> Array1<f64> {
-        let _n = residuals.len();
+        let n = residuals.len();
         let p = garch_coef.len();
         let q = arch_coef.len();
         let max_lag = p.max(q);

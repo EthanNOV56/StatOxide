@@ -374,8 +374,8 @@ impl ARIMA {
             let XtX = X.t().dot(&X);
             let Xty = X.t().dot(&y_reg);
             
-            let coef = linalg::solve(&XtX, &Xty)
-                .map_err(|e| Error::NumericalError(format!("ARIMA CSS solve failed: {}", e)))?;
+            let coef = so_linalg::solve(&XtX, &Xty)
+                .map_err(|e| Error::LinearAlgebraError(format!("ARIMA CSS solve failed: {}", e)))?;
             
             // Extract coefficients (update existing variables)
             let mut idx = 0;
@@ -444,7 +444,7 @@ impl ARIMA {
         }
         
         if !converged {
-            return Err(Error::ModelError(
+            return Err(Error::DataError(
                 format!("ARIMA CSS did not converge after {} iterations", self.config.max_iter)
             ));
         }

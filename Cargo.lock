@@ -1998,6 +1998,7 @@ dependencies = [
  "chrono",
  "ndarray",
  "rand 0.9.2",
+ "serde",
  "so-core",
  "so-linalg",
  "so-stats",
@@ -2011,6 +2012,7 @@ dependencies = [
  "ndarray",
  "rand 0.9.2",
  "serde",
+ "so-core",
  "thiserror 2.0.17",
 ]
 

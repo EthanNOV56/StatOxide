@@ -222,8 +222,8 @@ pub fn detrend_poly(series: &Array1<f64>, degree: usize) -> Result<Array1<f64>> 
     let xtx = xt.dot(&x);
     let xty = xt.dot(series);
     
-    let beta = linalg::solve(&xtx, &xty)
-        .map_err(|e| Error::ModelError(format!("Detrend failed: {}", e)))?;
+    let beta = so_linalg::solve(&xtx, &xty)
+        .map_err(|e| Error::DataError(format!("Detrend failed: {}", e)))?;
     
     // Calculate fitted trend
     let trend = x.dot(&beta);
