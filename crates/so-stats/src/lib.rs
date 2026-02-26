@@ -1,14 +1,23 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Statistical functions and distributions for StatOxide
+//!
+//! This crate provides:
+//! - Descriptive statistics (mean, variance, skewness, kurtosis, quantiles)
+//! - Probability distributions (Normal, t, Chi-Square, F, etc.)
+//! - Statistical tests (t-test, z-test, chi-square test, ANOVA)
+//! - Correlation measures (Pearson, Spearman, Kendall)
+//! - Statistical distances (KL divergence, Wasserstein distance)
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#![warn(missing_docs)]
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod descriptive;
+pub mod distributions;
+pub mod tests;
+pub mod correlation;
+pub mod distance;
+
+// Re-exports
+pub use descriptive::*;
+pub use distributions::*;
+pub use tests::*;
+pub use correlation::*;
+pub use distance::*;
