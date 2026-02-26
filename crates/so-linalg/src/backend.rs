@@ -1,5 +1,7 @@
 //! Linear algebra backend abstraction
 
+#![allow(non_snake_case)]  // Allow mathematical notation (A, B, etc.)
+
 use ndarray::{Array1, Array2};
 use super::error::{LinalgError, Result};
 
@@ -15,17 +17,17 @@ pub trait LinalgBackend: Send + Sync {
     fn matmul(&self, A: &Array2<f64>, B: &Array2<f64>) -> Result<Array2<f64>>;
     
     /// Compute Cholesky decomposition (optional)
-    fn cholesky(&self, A: &Array2<f64>) -> Result<Array2<f64>> {
+    fn cholesky(&self, _A: &Array2<f64>) -> Result<Array2<f64>> {
         Err(LinalgError::OperationFailed("Cholesky not implemented".to_string()))
     }
     
     /// Compute QR decomposition (optional)
-    fn qr(&self, A: &Array2<f64>) -> Result<(Array2<f64>, Array2<f64>)> {
+    fn qr(&self, _A: &Array2<f64>) -> Result<(Array2<f64>, Array2<f64>)> {
         Err(LinalgError::OperationFailed("QR not implemented".to_string()))
     }
     
     /// Compute singular value decomposition (optional)
-    fn svd(&self, A: &Array2<f64>) -> Result<(Array2<f64>, Array1<f64>, Array2<f64>)> {
+    fn svd(&self, _A: &Array2<f64>) -> Result<(Array2<f64>, Array1<f64>, Array2<f64>)> {
         Err(LinalgError::OperationFailed("SVD not implemented".to_string()))
     }
 }
@@ -42,7 +44,7 @@ pub struct FaerBackend;
 #[cfg(feature = "faer")]
 impl LinalgBackend for FaerBackend {
     fn solve(&self, A: &Array2<f64>, b: &Array1<f64>) -> Result<Array1<f64>> {
-        use faer::{Mat, prelude::{Solver, SolverCore}};
+        use faer::{Mat, prelude::Solve};
         
         let n = A.nrows();
         let m = A.ncols();
@@ -84,7 +86,7 @@ impl LinalgBackend for FaerBackend {
     }
     
     fn inv(&self, A: &Array2<f64>) -> Result<Array2<f64>> {
-        use faer::{Mat, prelude::{Solver, SolverCore}};
+        use faer::{Mat, linalg::solvers::DenseSolveCore, prelude::Solve};
         
         let n = A.nrows();
         let m = A.ncols();

@@ -40,6 +40,7 @@
 //! ```
 
 #![warn(missing_docs)]
+#![allow(non_snake_case)]  // Allow mathematical notation (A, B, etc.)
 
 pub mod backend;
 pub mod error;
@@ -47,8 +48,6 @@ pub mod error;
 // Re-exports for convenience
 pub use backend::{LinalgBackend, FaerBackend};
 pub use error::{LinalgError, Result};
-
-use backend::LinalgBackend as _;
 
 // ============================================================================
 // Global Backend Selection
@@ -107,8 +106,9 @@ pub fn matmul(A: &ndarray::Array2<f64>, B: &ndarray::Array2<f64>) -> Result<ndar
 // Optional Backend Implementations (feature-gated)
 // ============================================================================
 
-#[cfg(feature = "ndarray-linalg")]
-mod ndarray_linalg_backend;
-
-#[cfg(feature = "pure-rust")]
-mod pure_rust_backend;
+// TODO: Implement these backends
+// #[cfg(feature = "ndarray-linalg")]
+// mod ndarray_linalg_backend;
+// 
+// #[cfg(feature = "pure-rust")]
+// mod pure_rust_backend;
