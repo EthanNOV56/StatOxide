@@ -1,0 +1,41 @@
+use pyo3::prelude::*;
+use pyo3::types::PyDict;
+
+/// StatOxide Python module
+#[pymodule]
+fn statoxide(py: Python, m: &PyModule) -> PyResult<()> {
+    // Basic functions
+    m.add_function(wrap_pyfunction!(mean, m)?)?;
+    m.add_function(wrap_pyfunction!(std, m)?)?;
+    m.add_function(wrap_pyfunction!(version, m)?)?;
+    
+    Ok(())
+}
+
+/// Compute mean of data
+#[pyfunction]
+fn mean(data: Vec<f64>) -> PyResult<f64> {
+    if data.is_empty() {
+        return Ok(f64::NAN);
+    }
+    Ok(data.iter().sum::<f64>() / data.len() as f64)
+}
+
+/// Compute standard deviation of data
+#[pyfunction]
+fn std(data: Vec<f64>) -> PyResult<f64> {
+    if data.len() < 2 {
+        return Ok(f64::NAN);
+    }
+    let mean_val = mean(data.clone())?;
+    let variance = data.iter()
+        .map(|&x| (x - mean_val).powi(2))
+        .sum::<f64>() / (data.len() as f64 - 1.0);
+    Ok(variance.sqrt())
+}
+
+/// Get library version
+#[pyfunction]
+fn version() -> PyResult<String> {
+    Ok("0.1.0".to_string())
+}

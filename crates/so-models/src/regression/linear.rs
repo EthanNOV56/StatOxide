@@ -184,11 +184,14 @@ impl OLS {
         };
         
         // Compute F-statistic
-        let (f_statistic, f_p_value) = if self.intercept && df_model > 0 {
+        let (f_statistic, f_p_value) = if self.intercept && df_model > 0 && df_residual > 0 {
             let f_stat = (r_squared / df_model as f64) / ((1.0 - r_squared) / df_residual as f64);
+            let x = df_model as f64 * f_stat / (df_residual as f64 + df_model as f64 * f_stat);
+            // Ensure x is in [0, 1] for beta_reg
+            let x_clamped = x.clamp(0.0, 1.0);
             let f_p = 1.0 - statrs::function::beta::beta_reg(df_model as f64 / 2.0, 
                 df_residual as f64 / 2.0, 
-                df_model as f64 * f_stat / (df_residual as f64 + df_model as f64 * f_stat));
+                x_clamped);
             (Some(f_stat), Some(f_p))
         } else {
             (None, None)

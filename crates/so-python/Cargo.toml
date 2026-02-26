@@ -14,6 +14,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.27.0"
+ndarray.workspace = true
 so-core = { path = "../so-core" }
 so-models = { path = "../so-models" }
 so-tsa = { path = "../so-tsa" }

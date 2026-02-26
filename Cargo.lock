@@ -1969,6 +1969,7 @@ dependencies = [
 name = "so-python"
 version = "0.1.0"
 dependencies = [
+ "ndarray",
  "pyo3",
  "so-core",
  "so-linalg",

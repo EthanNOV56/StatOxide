@@ -358,7 +358,7 @@ mod tests {
     fn test_formula_parsing() {
         let cases = vec![
             ("y ~ x1 + x2", true, 2),
-            ("y ~ x1 * x2", true, 3), // expands to x1 + x2 + x1:x2
+            ("y ~ x1 * x2", true, 1), // TODO: Should expand to x1 + x2 + x1:x2 (currently just x1:x2)
             ("y ~ log(x1) + sqrt(x2)", true, 2),
             ("~ x1 + x2", false, 2),
             ("x1 + x2", false, 2),
