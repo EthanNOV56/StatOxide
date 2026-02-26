@@ -35,7 +35,7 @@ pub fn t_test_one_sample(data: &Array1<f64>, mu: f64, alternative: Alternative) 
     let std = data.std(1.0); // sample standard deviation
     
     if std == 0.0 {
-        return Err(Error::NumericalError("Zero variance in data".to_string()));
+        return Err(Error::DataError("Zero variance in data".to_string()));
     }
     
     let se = std / (n as f64).sqrt();
@@ -79,7 +79,7 @@ pub fn t_test_two_sample(
     let se = (pooled_var * (1.0 / n1 as f64 + 1.0 / n2 as f64)).sqrt();
     
     if se == 0.0 {
-        return Err(Error::NumericalError("Zero standard error".to_string()));
+        return Err(Error::DataError("Zero standard error".to_string()));
     }
     
     let t_stat = (mean1 - mean2) / se;
@@ -131,7 +131,7 @@ pub fn chi_square_goodness_of_fit(
         if exp > 0.0 {
             chi_sq += (obs - exp).powi(2) / exp;
         } else if obs != 0.0 {
-            return Err(Error::NumericalError("Expected frequency is zero but observed is not".to_string()));
+            return Err(Error::DataError("Expected frequency is zero but observed is not".to_string()));
         }
     }
     
@@ -176,7 +176,7 @@ pub fn chi_square_test_independence(
             if exp > 0.0 {
                 chi_sq += (obs - exp).powi(2) / exp;
             } else if obs != 0.0 {
-                return Err(Error::NumericalError("Expected frequency is zero but observed is not".to_string()));
+                return Err(Error::DataError("Expected frequency is zero but observed is not".to_string()));
             }
         }
     }
@@ -298,7 +298,7 @@ pub fn anova_one_way(groups: &[Array1<f64>]) -> Result<TestResult> {
     let ms_within = ss_within / (total_n as f64 - k as f64);
     
     if ms_within == 0.0 {
-        return Err(Error::NumericalError("Zero within-group variance".to_string()));
+        return Err(Error::DataError("Zero within-group variance".to_string()));
     }
     
     let f_stat = ms_between / ms_within;

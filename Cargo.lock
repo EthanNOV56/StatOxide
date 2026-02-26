@@ -1960,6 +1960,7 @@ dependencies = [
  "serde_json",
  "so-core",
  "so-linalg",
+ "so-stats",
  "statrs",
  "thiserror 2.0.17",
 ]
@@ -1986,6 +1987,7 @@ dependencies = [
  "rand 0.9.2",
  "so-core",
  "statrs",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

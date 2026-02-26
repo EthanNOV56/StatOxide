@@ -10,6 +10,7 @@ readme.workspace = true
 [dependencies]
 ndarray.workspace = true
 rand.workspace = true
+thiserror.workspace = true
 so-core = { path = "../so-core" }
 statrs = "0.17"
 

@@ -4,9 +4,10 @@
 //! and random number generation.
 
 use rand::Rng;
+use rand::seq::SliceRandom;
 use statrs::distribution::{
-    Beta, Cauchy, ChiSquared, ContinuousCDF, DiscreteCDF, Exponential, FisherSnedecor, Gamma,
-    Laplace, LogNormal, Normal, StudentsT, Triangular, Uniform, Weibull,
+    Beta, Cauchy, ChiSquared, Continuous, ContinuousCDF, DiscreteCDF, Exponential,
+    FisherSnedecor, Gamma, Laplace, LogNormal, Normal, StudentsT, Triangular, Uniform, Weibull,
 };
 use statrs::distribution::{Bernoulli, Binomial, Geometric, Hypergeometric, NegativeBinomial, Poisson};
 use thiserror::Error;
@@ -97,43 +98,43 @@ impl ContinuousDistribution {
         match self {
             Self::Normal { mean, std_dev } => {
                 let dist = Normal::new(*mean, *std_dev).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::StudentsT { df } => {
                 let dist = StudentsT::new(0.0, 1.0, *df).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::ChiSquared { df } => {
                 let dist = ChiSquared::new(*df).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::FisherSnedecor { d1, d2 } => {
                 let dist = FisherSnedecor::new(*d1, *d2).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::Exponential { rate } => {
                 let dist = Exponential::new(*rate).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::Gamma { shape, rate } => {
                 let dist = Gamma::new(*shape, *rate).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::Beta { alpha, beta } => {
                 let dist = Beta::new(*alpha, *beta).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::LogNormal { mu, sigma } => {
                 let dist = LogNormal::new(*mu, *sigma).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::Cauchy { location, scale } => {
                 let dist = Cauchy::new(*location, *scale).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::Weibull { shape, scale } => {
                 let dist = Weibull::new(*shape, *scale).unwrap();
-                dist.pdf(x)
+                Continuous::pdf(dist, x)
             }
             Self::Uniform { lower, upper } => {
                 if x < *lower || x > *upper {
@@ -297,7 +298,7 @@ impl ContinuousDistribution {
                 dist.sample(rng)
             }
             Self::Uniform { lower, upper } => {
-                rng.gen_range(*lower..=*upper)
+                rng.r#gen_range(*lower..=*upper)
             }
         }
     }
@@ -439,28 +440,61 @@ impl DiscreteDistribution {
     pub fn sample<R: Rng>(&self, rng: &mut R) -> u64 {
         match self {
             Self::Bernoulli { p } => {
-                let dist = Bernoulli::new(*p).unwrap();
-                dist.sample(rng) as u64
+                // Bernoulli trial: success with probability p
+                if rng.r#gen::<f64>() < *p { 1 } else { 0 }
             }
             Self::Binomial { n, p } => {
-                let dist = Binomial::new(*p, *n).unwrap();
-                dist.sample(rng)
+                // Sum of n Bernoulli trials
+                let mut successes = 0;
+                for _ in 0..*n {
+                    if rng.r#gen::<f64>() < *p {
+                        successes += 1;
+                    }
+                }
+                successes
             }
             Self::Poisson { lambda } => {
-                let dist = Poisson::new(*lambda).unwrap();
-                dist.sample(rng)
+                // Knuth's algorithm for Poisson sampling
+                let l = (-*lambda).exp();
+                let mut k = 0;
+                let mut p = 1.0;
+                loop {
+                    k += 1;
+                    p *= rng.r#gen::<f64>();
+                    if p <= l {
+                        break;
+                    }
+                }
+                (k - 1) as u64
             }
             Self::Geometric { p } => {
-                let dist = Geometric::new(*p).unwrap();
-                dist.sample(rng)
+                // Geometric distribution: number of trials until first success
+                ((rng.r#gen::<f64>().ln() / (1.0 - p).ln()).floor() as u64) + 1
             }
             Self::NegativeBinomial { r, p } => {
-                let dist = NegativeBinomial::new(*r, *p).unwrap();
-                dist.sample(rng)
+                // Number of trials until r successes
+                let mut successes = 0;
+                let mut trials = 0;
+                while successes < *r as u64 {
+                    trials += 1;
+                    if rng.r#gen::<f64>() < *p {
+                        successes += 1;
+                    }
+                }
+                trials
             }
             Self::Hypergeometric { N, K, n } => {
-                let dist = Hypergeometric::new(*N, *K, *n).unwrap();
-                dist.sample(rng)
+                // Simple implementation: sample without replacement
+                // This is inefficient for large N but works for now
+                let mut population = vec![true; *K as usize]
+                    .into_iter()
+                    .chain(vec![false; (*N - *K) as usize])
+                    .collect::<Vec<_>>();
+                population.shuffle(rng);
+                population[..*n as usize]
+                    .iter()
+                    .filter(|&&x| x)
+                    .count() as u64
             }
         }
     }

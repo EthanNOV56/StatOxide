@@ -230,14 +230,14 @@ pub fn mahalanobis_distance(
     let n = x.len();
     
     // Compute diff^T * cov_inv * diff
-    let mut temp = Array1::zeros(n);
+    let mut temp = Array1::<f64>::zeros(n);
     for i in 0..n {
         for j in 0..n {
             temp[i] += diff[j] * cov_inv[(j, i)];
         }
     }
     
-    let mut distance_sq = 0.0;
+    let mut distance_sq: f64 = 0.0;
     for i in 0..n {
         distance_sq += diff[i] * temp[i];
     }

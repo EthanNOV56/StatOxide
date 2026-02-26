@@ -156,12 +156,11 @@ pub fn multiple_correlation(y: &Array1<f64>, y_pred: &Array1<f64>) -> Option<f64
     let ss_residual: f64 = y.iter().zip(y_pred.iter())
         .map(|(&yi, &yhat)| (yi - yhat).powi(2))
         .sum();
+    
+    let mean_y = y.mean()?;
     let ss_total: f64 = y.iter()
-        .map(|&yi| {
-            let mean_y = y.mean()?;
-            (yi - mean_y).powi(2)
-        })
-        .sum::<Option<f64>>()?;
+        .map(|&yi| (yi - mean_y).powi(2))
+        .sum();
     
     if ss_total == 0.0 {
         return Some(0.0);
