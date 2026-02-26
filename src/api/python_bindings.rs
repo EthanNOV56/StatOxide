@@ -9,9 +9,9 @@ use pyo3::exceptions::PyValueError;
 use numpy::{PyArray1, PyArray2, IntoPyArray};
 use ndarray::{Array1, Array2, Ix1, Ix2};
 
-use crate::data::{DataFrame, Series};
-use crate::formula::Formula;
-use crate::linear::{LinearModelBuilder, LinearRegressionResults, OLS, Ridge};
+use crate::base::data::{DataFrame, Series};
+use crate::tools::formula::Formula;
+use crate::regression::linear::{LinearModelBuilder, LinearRegressionResults, OLS, Ridge};
 
 // ============================================================================
 // Python Series wrapper

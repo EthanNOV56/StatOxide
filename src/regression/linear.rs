@@ -7,10 +7,10 @@
 //! - Elastic Net (L1 + L2 regularization)
 
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
-use ndarray_linalg::{Inverse, Solve, LeastSquaresSvd};
 use serde::{Deserialize, Serialize};
-use crate::data::DataFrame;
-use crate::formula::Formula;
+use crate::base::data::DataFrame;
+use crate::tools::formula::Formula;
+use crate::tools::linalg;
 
 // ============================================================================
 // Model Results
@@ -217,15 +217,18 @@ impl OLS {
     }
     
     fn solve_normal_equations(&self, X: &Array2<f64>, y: &Array1<f64>) -> Result<Array1<f64>, String> {
-        // Use QR decomposition for numerical stability
-        let qr = X.qr().map_err(|e| format!("QR decomposition failed: {:?}", e))?;
-        qr.solve(y).map_err(|e| format!("Solving failed: {:?}", e))
+        // Solve normal equations: (X'X)β = X'y
+        let xtx = X.t().dot(X);
+        let xty = X.t().dot(y);
+        
+        // Use our linalg solver
+        linalg::solve(&xtx, &xty).map_err(|e| format!("Solving normal equations failed: {}", e))
     }
     
     fn compute_inference(
         &self,
         X: &Array2<f64>,
-        residuals: &Array1<f64>,
+        _residuals: &Array1<f64>,
         sigma: f64,
         df_residual: usize,
         coefficients: &Array1<f64>,
@@ -239,7 +242,7 @@ impl OLS {
         
         // Compute covariance matrix: sigma^2 * (X'X)^-1
         let xtx = X.t().dot(X);
-        let xtx_inv = match xtx.inv() {
+        let xtx_inv = match linalg::inv(&xtx) {
             Ok(inv) => inv,
             Err(_) => return (None, None, None),
         };
@@ -261,7 +264,7 @@ impl OLS {
         // p-values from t-distribution
         let p_values: Array1<f64> = t_values
             .iter()
-            .map(|&t| {
+            .map(|&t: &f64| {
                 let t_abs = t.abs();
                 2.0 * (1.0 - statrs::function::gamma::gamma_ur(df_residual as f64 / 2.0, 
                     df_residual as f64 / (df_residual as f64 + t_abs * t_abs)))
@@ -340,9 +343,9 @@ impl Ridge {
         }
         
         let xty = X_std.t().dot(&y_centered);
-        let coefficients_std = match xtx_regularized.solve(&xty) {
+        let coefficients_std = match linalg::solve(&xtx_regularized, &xty) {
             Ok(coef) => coef,
-            Err(e) => return Err(format!("Ridge regression solve failed: {:?}", e)),
+            Err(e) => return Err(format!("Ridge regression solve failed: {}", e)),
         };
         
         // Unstandardize coefficients

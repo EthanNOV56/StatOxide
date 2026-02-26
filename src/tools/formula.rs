@@ -17,11 +17,11 @@ use nom::{
     bytes::complete::tag,
     character::complete::{alpha1, alphanumeric1, char, digit1, multispace0, space0},
     combinator::{map, opt, recognize},
-    multi::{many0, many1},
+    multi::{many0, many1, separated_list1},
     sequence::{delimited, pair, preceded, terminated, tuple},
     IResult,
 };
-use crate::data::{DataFrame, Series};
+use crate::base::data::{DataFrame, Series};
 
 // ============================================================================
 // Formula AST
@@ -256,29 +256,7 @@ fn base_term_parser(input: &str) -> IResult<&str, Term> {
     )(input)
 }
 
-fn separated_list1<T>(
-    sep: impl Fn(&str) -> IResult<&str, &str>,
-    parser: impl Fn(&str) -> IResult<&str, T>,
-) -> impl Fn(&str) -> IResult<&str, Vec<T>> {
-    move |input: &str| {
-        let mut items = Vec::new();
-        let mut rest = input;
 
-        // Parse first item
-        let (new_rest, first_item) = parser(rest)?;
-        items.push(first_item);
-        rest = new_rest;
-
-        // Parse remaining items with separator
-        while let Ok((new_rest, _)) = sep(rest) {
-            let (new_rest, item) = parser(new_rest)?;
-            items.push(item);
-            rest = new_rest;
-        }
-
-        Ok((rest, items))
-    }
-}
 
 // ============================================================================
 // Formula Evaluation
