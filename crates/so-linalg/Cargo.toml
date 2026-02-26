@@ -9,5 +9,12 @@ readme.workspace = true
 
 [dependencies]
 ndarray.workspace = true
-faer.workspace = true
+faer = { workspace = true, optional = true }
 thiserror.workspace = true
+ndarray-linalg = { version = "0.18", optional = true, features = ["openblas"] }
+
+[features]
+default = ["faer"]
+faer = ["dep:faer"]
+ndarray-linalg = ["dep:ndarray-linalg"]
+pure-rust = []  # Pure Rust implementation (no external dependencies)

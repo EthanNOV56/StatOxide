@@ -1,135 +1,114 @@
-//! Linear algebra utilities using faer
+//! Linear algebra middleware providing unified interface to multiple backends
+//!
+//! This crate provides a common interface for linear algebra operations,
+//! with support for multiple backends (faer, ndarray-linalg, etc.).
+//!
+//! # Usage
+//!
+//! ```rust
+//! use so_linalg::{solve, inv, matmul};
+//! use ndarray::{arr1, arr2};
+//!
+//! // Solve linear system
+//! let A = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
+//! let b = arr1(&[5.0, 6.0]);
+//! let x = solve(&A, &b).unwrap();
+//!
+//! // Matrix inverse
+//! let inv_A = inv(&A).unwrap();
+//!
+//! // Matrix multiplication
+//! let B = arr2(&[[2.0, 0.0], [1.0, 2.0]]);
+//! let C = matmul(&A, &B).unwrap();
+//! ```
+//!
+//! # Backends
+//!
+//! The crate supports multiple backends selectable via Cargo features:
+//! - `faer` (default): Uses the faer library for high-performance linear algebra
+//! - `ndarray-linalg`: Uses ndarray-linalg with OpenBLAS/LAPACK
+//! - `pure-rust`: Pure Rust implementation (slower but no external dependencies)
+//!
+//! # Advanced Usage
+//!
+//! For more control, you can use backends directly:
+//! ```rust
+//! use so_linalg::backend::{LinalgBackend, FaerBackend};
+//!
+//! let backend = FaerBackend::default();
+//! let result = backend.solve(&A, &b);
+//! ```
 
-use ndarray::{Array1, Array2};
-use faer::{Mat, prelude::{Solver, SolverCore}};
-use thiserror::Error;
+#![warn(missing_docs)]
 
-#[derive(Error, Debug)]
-pub enum LinalgError {
-    #[error("Dimension mismatch: {0}")]
-    DimensionMismatch(String),
+pub mod backend;
+pub mod error;
+
+// Re-exports for convenience
+pub use backend::{LinalgBackend, FaerBackend};
+pub use error::{LinalgError, Result};
+
+use backend::LinalgBackend as _;
+
+// ============================================================================
+// Global Backend Selection
+// ============================================================================
+
+/// Get the default linear algebra backend
+///
+/// The backend is selected based on enabled Cargo features:
+/// - `faer` (default): FaerBackend
+/// - `ndarray-linalg`: NdarrayLinalgBackend
+/// - `pure-rust`: PureRustBackend
+pub fn default_backend() -> impl LinalgBackend {
+    // Feature-based backend selection
+    #[cfg(feature = "faer")]
+    {
+        backend::FaerBackend::default()
+    }
     
-    #[error("Matrix must be square, got {rows}x{cols}")]
-    NotSquare { rows: usize, cols: usize },
+    #[cfg(all(not(feature = "faer"), feature = "ndarray-linalg"))]
+    {
+        backend::NdarrayLinalgBackend::default()
+    }
     
-    #[error("Singular matrix encountered")]
-    SingularMatrix,
+    #[cfg(all(not(feature = "faer"), not(feature = "ndarray-linalg"), feature = "pure-rust"))]
+    {
+        backend::PureRustBackend::default()
+    }
     
-    #[error("Linear algebra operation failed: {0}")]
-    OperationFailed(String),
+    #[cfg(not(any(feature = "faer", feature = "ndarray-linalg", feature = "pure-rust")))]
+    {
+        // Default to faer if no features specified
+        backend::FaerBackend::default()
+    }
 }
 
-pub type Result<T> = std::result::Result<T, LinalgError>;
+// ============================================================================
+// Convenience Functions (using default backend)
+// ============================================================================
 
-/// Solve linear system A * x = b
-pub fn solve(A: &Array2<f64>, b: &Array1<f64>) -> Result<Array1<f64>> {
-    let n = A.nrows();
-    let m = A.ncols();
-    
-    if n != m {
-        return Err(LinalgError::NotSquare { rows: n, cols: m });
-    }
-    
-    if n != b.len() {
-        return Err(LinalgError::DimensionMismatch(
-            format!("A is {}x{}, b has length {}", n, m, b.len())
-        ));
-    }
-    
-    // Convert ndarray to faer Mat
-    let mut A_faer = Mat::zeros(n, m);
-    for i in 0..n {
-        for j in 0..m {
-            A_faer[(i, j)] = A[(i, j)];
-        }
-    }
-    
-    let mut b_faer = Mat::zeros(n, 1);
-    for i in 0..n {
-        b_faer[(i, 0)] = b[i];
-    }
-    
-    // Solve using LU decomposition
-    let lu = A_faer.partial_piv_lu();
-    let x_faer = lu.solve(&b_faer);
-    
-    // Convert back to ndarray
-    let mut x = Array1::zeros(n);
-    for i in 0..n {
-        x[i] = x_faer[(i, 0)];
-    }
-    
-    Ok(x)
+/// Solve linear system A * x = b using the default backend
+pub fn solve(A: &ndarray::Array2<f64>, b: &ndarray::Array1<f64>) -> Result<ndarray::Array1<f64>> {
+    default_backend().solve(A, b)
 }
 
-/// Compute matrix inverse
-pub fn inv(A: &Array2<f64>) -> Result<Array2<f64>> {
-    let n = A.nrows();
-    let m = A.ncols();
-    
-    if n != m {
-        return Err(LinalgError::NotSquare { rows: n, cols: m });
-    }
-    
-    // Convert ndarray to faer Mat
-    let mut A_faer = Mat::zeros(n, n);
-    for i in 0..n {
-        for j in 0..n {
-            A_faer[(i, j)] = A[(i, j)];
-        }
-    }
-    
-    // Compute inverse using LU decomposition
-    let lu = A_faer.partial_piv_lu();
-    let inv_faer = lu.inverse();
-    
-    // Convert back to ndarray
-    let mut inv = Array2::zeros((n, n));
-    for i in 0..n {
-        for j in 0..n {
-            inv[(i, j)] = inv_faer[(i, j)];
-        }
-    }
-    
-    Ok(inv)
+/// Compute matrix inverse using the default backend
+pub fn inv(A: &ndarray::Array2<f64>) -> Result<ndarray::Array2<f64>> {
+    default_backend().inv(A)
 }
 
-/// Compute matrix multiplication: C = A * B
-pub fn matmul(A: &Array2<f64>, B: &Array2<f64>) -> Result<Array2<f64>> {
-    let n = A.nrows();
-    let k = A.ncols();
-    let m = B.ncols();
-    
-    if A.ncols() != B.nrows() {
-        return Err(LinalgError::DimensionMismatch(
-            format!("A is {}x{}, B is {}x{}", n, k, B.nrows(), m)
-        ));
-    }
-    
-    // Convert to faer for multiplication
-    let mut A_faer = Mat::zeros(n, k);
-    for i in 0..n {
-        for j in 0..k {
-            A_faer[(i, j)] = A[(i, j)];
-        }
-    }
-    
-    let mut B_faer = Mat::zeros(k, m);
-    for i in 0..k {
-        for j in 0..m {
-            B_faer[(i, j)] = B[(i, j)];
-        }
-    }
-    
-    let C_faer = &A_faer * &B_faer;
-    
-    // Convert back
-    let mut C = Array2::zeros((n, m));
-    for i in 0..n {
-        for j in 0..m {
-            C[(i, j)] = C_faer[(i, j)];
-        }
-    }
-    
-    Ok(C)
+/// Compute matrix multiplication: C = A * B using the default backend
+pub fn matmul(A: &ndarray::Array2<f64>, B: &ndarray::Array2<f64>) -> Result<ndarray::Array2<f64>> {
+    default_backend().matmul(A, B)
 }
+
+// ============================================================================
+// Optional Backend Implementations (feature-gated)
+// ============================================================================
+
+#[cfg(feature = "ndarray-linalg")]
+mod ndarray_linalg_backend;
+
+#[cfg(feature = "pure-rust")]
+mod pure_rust_backend;
