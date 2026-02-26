@@ -53,23 +53,24 @@ pub mod utils;
 // Re-exports for convenience
 pub use timeseries::TimeSeries;
 pub use stationarity::{StationarityTest, ADFTest, KPSSTest, PPTest};
-pub use arima::{ARIMA, SARIMA, ARIMAResults};
-pub use garch::{GARCH, ARCH, GARCHResults};
+pub use arima::{ARIMA, SARIMABuilder, ARIMAResults, SARIMAOrder};
+pub use garch::{GARCH, ARCH, GARCHResults, GARCHOrder, GARCHDistribution};
 pub use statespace::{StateSpaceModel, KalmanFilter};
-pub use decomposition::{SeasonalDecompose, STL, MovingAverage};
-pub use forecast::{Forecast, PredictionInterval};
-pub use results::TSAResults;
+pub use decomposition::{DecompositionMethod, DecompositionResults, MovingAverageDecomposition, STLDecomposition, HodrickPrescottFilter, X12ARIMA, DecompositionExt};
+pub use forecast::{ForecastMetrics, IntervalMethod, PredictionInterval, PredictionIntervals, TimeSeriesCV};
+pub use results::{TSAResults, ResidualDiagnostics, ModelComparison};
+pub use utils::{acf, pacf, ccf, periodogram, spectrum, detrend_poly, box_cox, box_cox_lambda, rolling_statistic, ewma, seasonal_dummies, forecast_errors, information_criteria, diebold_mariano};
 
 // Common prelude for TSA
 pub mod prelude {
     pub use super::{
         TimeSeries,
         StationarityTest, ADFTest, KPSSTest, PPTest,
-        ARIMA, SARIMA, ARIMAResults,
-        GARCH, ARCH, GARCHResults,
+        ARIMA, SARIMABuilder, ARIMAResults, SARIMAOrder,
+        GARCH, ARCH, GARCHResults, GARCHOrder, GARCHDistribution,
         StateSpaceModel, KalmanFilter,
-        SeasonalDecompose, STL, MovingAverage,
-        Forecast, PredictionInterval,
-        TSAResults,
+        DecompositionMethod, DecompositionResults, MovingAverageDecomposition, STLDecomposition, HodrickPrescottFilter, X12ARIMA, DecompositionExt,
+        ForecastMetrics, IntervalMethod, PredictionInterval, PredictionIntervals, TimeSeriesCV,
+        TSAResults, ResidualDiagnostics, ModelComparison,
     };
 }

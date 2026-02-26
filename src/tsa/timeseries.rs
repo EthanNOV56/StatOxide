@@ -1,8 +1,7 @@
 //! Time series data structure with datetime indexing
 
 use std::collections::HashMap;
-use chrono::{DateTime, NaiveDateTime, TimeZone, Utc, Datelike, Timelike};
-use ndarray::{Array1, Array2};
+use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 
 use crate::base::data::{DataFrame, Series};
@@ -71,15 +70,15 @@ impl Frequency {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeSeries {
     /// Series name
-    name: String,
+    pub name: String,
     /// Time index (Unix timestamps in seconds)
-    timestamps: Vec<i64>,
+    pub timestamps: Vec<i64>,
     /// Values
-    values: Array1<f64>,
+    pub values: Array1<f64>,
     /// Frequency (if regular)
-    frequency: Option<Frequency>,
+    pub frequency: Option<Frequency>,
     /// Metadata
-    metadata: HashMap<String, String>,
+    pub metadata: HashMap<String, String>,
 }
 
 impl TimeSeries {
@@ -430,8 +429,16 @@ impl TimeSeries {
     
     /// Detect outliers using IQR method
     pub fn detect_outliers(&self, threshold: f64) -> Vec<usize> {
-        let q1 = self.values.quantile(0.25).unwrap_or(0.0);
-        let q3 = self.values.quantile(0.75).unwrap_or(0.0);
+        // Manual quantile calculation to avoid ndarray_stats dependency issues
+        let mut sorted: Vec<f64> = self.values.to_vec();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        
+        let n = sorted.len();
+        let q1_idx = ((n as f64) * 0.25).floor() as usize;
+        let q3_idx = ((n as f64) * 0.75).floor() as usize;
+        
+        let q1 = sorted.get(q1_idx).copied().unwrap_or(0.0);
+        let q3 = sorted.get(q3_idx).copied().unwrap_or(0.0);
         let iqr = q3 - q1;
         
         let lower_bound = q1 - threshold * iqr;

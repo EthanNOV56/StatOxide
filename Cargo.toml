@@ -33,6 +33,7 @@ serde_json = "1.0"
 thiserror = "1.0"
 anyhow = "1.0"
 rayon = "1.7"
+chrono = "0.4"  # DateTime handling for time series
 
 # Parsing
 nom = "7.1"

@@ -1,7 +1,8 @@
 //! GLM results structure and diagnostics
 
-use ndarray::{Array1, Array2};
+use ndarray::Array1;
 use serde::{Deserialize, Serialize};
+use statrs::distribution::{Normal, ContinuousCDF};
 
 use crate::glm::family::{Family, Link};
 
@@ -165,7 +166,7 @@ impl GLMResults {
     pub fn confidence_intervals(&self, alpha: f64, feature_names: &[String]) -> Vec<(String, f64, f64)> {
         let n_coef = self.coefficients.len();
         let z_critical = 1.0 - alpha / 2.0;
-        let z_value = statrs::function::normal::inverse_cdf(z_critical, 0.0, 1.0);
+        let z_value = Normal::new(0.0, 1.0).unwrap().inverse_cdf(z_critical);
         
         let mut intervals = Vec::with_capacity(n_coef);
         

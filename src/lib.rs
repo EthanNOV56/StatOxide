@@ -109,10 +109,6 @@ pub mod linear {
     pub use crate::regression::linear::*;
 }
 
-pub mod glm {
-    pub use crate::glm::*;
-}
-
 pub mod utils {
     pub use crate::tools::utils::*;
 }

@@ -6,7 +6,7 @@
 //! - Lasso Regression (L1 regularization)
 //! - Elastic Net (L1 + L2 regularization)
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
+use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use crate::base::data::DataFrame;
 use crate::tools::formula::Formula;

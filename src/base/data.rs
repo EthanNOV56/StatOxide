@@ -3,10 +3,9 @@
 //! This module provides columnar data structures optimized for
 //! statistical operations, with interoperability with numpy and pandas.
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
+use ndarray::{Array1, Array2, ArrayView1};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use crate::tools::formula::Formula;
 
@@ -271,6 +270,12 @@ impl DataFrame {
     /// Get design matrix for regression
     pub fn design_matrix(&self, formula: &Formula) -> Result<Array2<f64>, String> {
         formula.build_matrix(self)
+    }
+}
+
+impl Default for DataFrame {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

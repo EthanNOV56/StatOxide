@@ -1,7 +1,7 @@
 //! Generalized Linear Model implementation using IRLS (Iteratively Reweighted Least Squares)
 
 use ndarray::{Array1, Array2};
-use serde::{Deserialize, Serialize};
+use statrs::distribution::{Normal, ContinuousCDF};
 
 use crate::base::data::DataFrame;
 use crate::tools::formula::Formula;
@@ -176,6 +176,8 @@ impl GLM {
         let mut converged = false;
         let mut iteration = 0;
         let mut deviance_old = f64::INFINITY;
+        let mut last_X_weighted = Array2::zeros((n, p));
+        let mut last_XtWX = Array2::zeros((p, p));
         
         // IRLS iterations
         while iteration < self.max_iter {
@@ -202,6 +204,10 @@ impl GLM {
             
             let beta_new = linalg::solve(&XtWX, &XtWz)
                 .map_err(|e| StatError::NumericalError(format!("IRLS solve failed: {}", e)))?;
+            
+            // Save the last weighted matrices for standard error computation
+            last_X_weighted = X_weighted;
+            last_XtWX = XtWX;
             
             // Update parameters
             eta = X.dot(&beta_new);
@@ -245,7 +251,7 @@ impl GLM {
             .collect();
         
         // Compute leverage and Cook's distance (simplified)
-        let hat_matrix_diag = self.compute_leverage(&X_weighted);
+        let hat_matrix_diag = self.compute_leverage(&last_X_weighted);
         
         // Estimate or use provided scale
         let scale = match self.scale {
@@ -254,7 +260,7 @@ impl GLM {
         };
         
         // Compute standard errors
-        let cov_matrix = self.compute_covariance(&XtWX, scale);
+        let cov_matrix = self.compute_covariance(&last_XtWX, scale);
         let std_errors: Array1<f64> = (0..p)
             .map(|i| cov_matrix[(i, i)].sqrt())
             .collect();
@@ -328,7 +334,7 @@ impl GLM {
     }
     
     /// Compute z/t-values and p-values for coefficients
-    fn compute_inference(&self, coefficients: &Array1<f64>, std_errors: &Array1<f64>, df_residual: usize) -> (Array1<f64>, Array1<f64>) {
+    fn compute_inference(&self, coefficients: &Array1<f64>, std_errors: &Array1<f64>, _df_residual: usize) -> (Array1<f64>, Array1<f64>) {
         let n_coef = coefficients.len();
         let mut z_values = Array1::zeros(n_coef);
         let mut p_values = Array1::zeros(n_coef);
@@ -340,7 +346,7 @@ impl GLM {
                 
                 // Use normal distribution for p-values in GLM
                 let z_abs = z_values[i].abs();
-                p_values[i] = 2.0 * (1.0 - statrs::function::normal::cdf(z_abs, 0.0, 1.0));
+                p_values[i] = 2.0 * (1.0 - Normal::new(0.0, 1.0).unwrap().cdf(z_abs));
             } else {
                 z_values[i] = f64::NAN;
                 p_values[i] = f64::NAN;

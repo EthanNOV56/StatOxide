@@ -143,13 +143,12 @@ impl ADFTest {
         let mut best_lags = 0;
         
         for lags in 0..=max_lags {
-            if let Ok((y, X)) = self.prepare_regression(values, lags) {
-                if y.len() > X.ncols() {
-                    if let Ok((_, _, aic)) = self.calculate_aic(&y, &X) {
-                        if aic < best_aic {
-                            best_aic = aic;
-                            best_lags = lags;
-                        }
+            let (y, X) = self.prepare_regression(values, lags);
+            if y.len() > 0 && y.len() > X.ncols() {
+                if let Ok((_, _, aic)) = self.calculate_aic(&y, &X) {
+                    if aic < best_aic {
+                        best_aic = aic;
+                        best_lags = lags;
                     }
                 }
             }
@@ -230,7 +229,7 @@ impl ADFTest {
         let sigma2 = rss / df_resid as f64;
         
         // Test statistic for y_{t-1} coefficient (first element)
-        let se = (sigma2 * XtX[(0, 0)].inv()).sqrt();
+        let se = (sigma2 / XtX[(0, 0)]).sqrt();
         let test_stat = beta[0] / se;
         
         // Approximate p-value using MacKinnon (2010) approximation

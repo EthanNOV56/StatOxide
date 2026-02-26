@@ -2,6 +2,7 @@
 
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
+use statrs::distribution::{Normal, Continuous};
 use crate::tools::utils::Result;
 
 /// Distribution families for GLM
@@ -246,7 +247,7 @@ impl Link {
             },
             Link::Probit => {
                 // Derivative of inverse normal CDF is normal PDF
-                statrs::function::normal::pdf(eta, 0.0, 1.0)
+                Normal::new(0.0, 1.0).unwrap().pdf(eta)
             },
             Link::Cloglog => {
                 let mu = self.inverse_link(eta);
