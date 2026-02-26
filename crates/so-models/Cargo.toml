@@ -13,6 +13,7 @@ thiserror.workspace = true
 serde = { version = "1.0", features = ["derive"] }
 so-core = { path = "../so-core" }
 so-linalg = { path = "../so-linalg" }
+so-stats = { path = "../so-stats" }
 statrs = "0.17"
 approx = "0.5"
 rand.workspace = true

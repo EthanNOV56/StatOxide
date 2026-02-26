@@ -25,7 +25,7 @@
 //! 4. **Laplace Approximation**: For non-Gaussian GLMM
 //!
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, stack, Axis};
+use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{ContinuousCDF, Normal};
 
@@ -271,7 +271,7 @@ impl LinearMixedModelBuilder {
         let V_inv = self.compute_V_inv(&Z, sigma2_e, &sigma2_u, group_sizes)?;
         let XtVX = X.t().dot(&V_inv.dot(X));
         let cov_beta = inv(&XtVX)
-            .map_err(|e| Error::LinearAlgebraError(format!("Failed to invert X'V^{-1}X: {}", e)))?;
+            .map_err(|e| Error::LinearAlgebraError(format!("Failed to invert X'V^{{-1}}X: {}", e)))?;
         
         let fixed_se = cov_beta.diag().mapv(|x| x.sqrt());
         
