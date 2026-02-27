@@ -102,12 +102,96 @@ impl RandomEffect {
     }
     
     /// Get design matrix for this random effect
-    pub fn design_matrix(&self, _data: &HashMap<String, Array1<f64>>, _group_ids: &Array1<usize>) 
+    pub fn design_matrix(&self, data: &HashMap<String, Array1<f64>>, group_ids: &Array1<usize>) 
         -> Result<Array2<f64>, String> {
-        // TODO: Implement design matrix construction based on effect type
-        // This would create Z matrix for this random effect
+        let n = group_ids.len();
+        let n_groups = group_ids.iter().max().map_or(0, |&max| max + 1);
         
-        Err("Design matrix construction not yet implemented".to_string())
+        match self.effect_type {
+            RandomEffectType::Intercept => {
+                // Random intercept: Z is indicator matrix (n x n_groups)
+                let mut z = Array2::zeros((n, n_groups));
+                for i in 0..n {
+                    let group_idx = group_ids[i];
+                    if group_idx < n_groups {
+                        z[(i, group_idx)] = 1.0;
+                    }
+                }
+                Ok(z)
+            }
+            RandomEffectType::Slope => {
+                // Random slope: Z contains predictor values for each group
+                let predictor = self.predictor.as_ref()
+                    .ok_or("Random slope effect requires predictor variable".to_string())?;
+                let predictor_data = data.get(predictor)
+                    .ok_or(format!("Predictor variable '{}' not found in data", predictor))?;
+                
+                if predictor_data.len() != n {
+                    return Err(format!("Predictor '{}' length {} doesn't match group_ids length {}", 
+                        predictor, predictor_data.len(), n));
+                }
+                
+                let mut z = Array2::zeros((n, n_groups));
+                for i in 0..n {
+                    let group_idx = group_ids[i];
+                    if group_idx < n_groups {
+                        z[(i, group_idx)] = predictor_data[i];
+                    }
+                }
+                Ok(z)
+            }
+            RandomEffectType::InterceptSlope => {
+                // Random intercept and slope: Z has two columns per group
+                let predictor = self.predictor.as_ref()
+                    .ok_or("Random intercept-slope effect requires predictor variable".to_string())?;
+                let predictor_data = data.get(predictor)
+                    .ok_or(format!("Predictor variable '{}' not found in data", predictor))?;
+                
+                if predictor_data.len() != n {
+                    return Err(format!("Predictor '{}' length {} doesn't match group_ids length {}", 
+                        predictor, predictor_data.len(), n));
+                }
+                
+                let mut z = Array2::zeros((n, n_groups * 2));
+                for i in 0..n {
+                    let group_idx = group_ids[i];
+                    if group_idx < n_groups {
+                        // Intercept column
+                        z[(i, group_idx * 2)] = 1.0;
+                        // Slope column
+                        z[(i, group_idx * 2 + 1)] = predictor_data[i];
+                    }
+                }
+                Ok(z)
+            }
+            RandomEffectType::Uncorrelated => {
+                // Uncorrelated random intercept and slope
+                let predictor = self.predictor.as_ref()
+                    .ok_or("Uncorrelated random effect requires predictor variable".to_string())?;
+                let predictor_data = data.get(predictor)
+                    .ok_or(format!("Predictor variable '{}' not found in data", predictor))?;
+                
+                if predictor_data.len() != n {
+                    return Err(format!("Predictor '{}' length {} doesn't match group_ids length {}", 
+                        predictor, predictor_data.len(), n));
+                }
+                
+                // For uncorrelated, we have separate intercept and slope random effects
+                // This can be represented as a block-diagonal structure
+                // For simplicity, return combined matrix (implementation would be more complex)
+                let mut z = Array2::zeros((n, n_groups * 2));
+                for i in 0..n {
+                    let group_idx = group_ids[i];
+                    if group_idx < n_groups {
+                        // Intercept column
+                        z[(i, group_idx * 2)] = 1.0;
+                        // Slope column
+                        z[(i, group_idx * 2 + 1)] = predictor_data[i];
+                    }
+                }
+                Ok(z)
+            }
+        }
     }
     
     /// Get number of random effect parameters
