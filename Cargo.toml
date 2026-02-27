@@ -4,8 +4,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-name = "statoxide"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 authors = ["EthanNov56 <yichen_1226@163.com>"]
 description = "High-performance statistical computing library written in Rust, exposed to Python via PyO3"
@@ -31,12 +30,12 @@ nom = "7.1"
 anyhow = "1.0"
 serde_json = "1.0"
 
-so-core = { version = "0.2.1", path = "crates/so-core", default-features = false }
-so-linalg = { version = "0.2.1", path = "crates/so-linalg", default-features = true }
-so-models = { version = "0.2.1", path = "crates/so-models", default-features = false }
-so-stats = { version = "0.2.1", path = "crates/so-stats", default-features = false }
-so-tsa = { version = "0.2.1", path = "crates/so-tsa", default-features = false }
-so-utils = { version = "0.2.1", path = "crates/so-utils", default-features = false }
+so-core = { version = "0.2.2", path = "crates/so-core", default-features = false }
+so-linalg = { version = "0.2.2", path = "crates/so-linalg", default-features = true }
+so-models = { version = "0.2.2", path = "crates/so-models", default-features = false }
+so-stats = { version = "0.2.2", path = "crates/so-stats", default-features = false }
+so-tsa = { version = "0.2.2", path = "crates/so-tsa", default-features = false }
+so-utils = { version = "0.2.2", path = "crates/so-utils", default-features = false }
 
 [workspace.dev-dependencies]
 criterion = "0.5"
