@@ -182,7 +182,7 @@ python crates/so-python/test_api.py  # API demonstration
 
 ## 📄 License
 
-MIT OR Apache-2.0 - see [LICENSE](LICENSE) file for details.
+MIT AND Apache-2.0 - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -203,8 +203,8 @@ Contributions are welcome!
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/EthanNOV56/so-dev/issues)
-- **Repository**: [GitHub Repository](https://github.com/EthanNOV56/so-dev)
+- **Issues**: [GitHub Issues](https://github.com/EthanNOV56/StatOxide/issues)
+- **Repository**: [GitHub Repository](https://github.com/EthanNOV56/StatOxide)
 
 ---
 
