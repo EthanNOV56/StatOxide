@@ -11,8 +11,9 @@ readme.workspace = true
 ndarray.workspace = true
 rand.workspace = true
 thiserror.workspace = true
-so-core = { path = "../so-core" }
 serde = { version = "1.0", features = ["derive"], optional = true }
+
+so-core = { workspace = true }
 
 [features]
 default = []

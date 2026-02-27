@@ -31,6 +31,13 @@ nom = "7.1"
 anyhow = "1.0"
 serde_json = "1.0"
 
+so-core = "0.2.0"
+so-linalg = "0.2.0"
+so-models = "0.2.0"
+so-stats = "0.2.0"
+so-tsa = "0.2.0"
+so-utils = "0.2.0"
+
 [workspace.dev-dependencies]
 criterion = "0.5"
 proptest = "1.3"

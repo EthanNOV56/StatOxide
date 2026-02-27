@@ -11,11 +11,12 @@ readme.workspace = true
 ndarray.workspace = true
 rand.workspace = true
 serde = { version = "1.0", features = ["derive"] }
-so-core = { path = "../so-core" }
-so-linalg = { path = "../so-linalg" }
-so-stats = { path = "../so-stats" }
 chrono = { version = "0.4", features = ["serde"] }
 statrs = "0.17"
+
+so-core = { workspace = true }
+so-linalg = { workspace = true }
+so-stats = { workspace = true }
 
 [dev-dependencies]
 approx = "0.5"

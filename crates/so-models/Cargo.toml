@@ -11,12 +11,13 @@ readme.workspace = true
 ndarray.workspace = true
 thiserror.workspace = true
 serde = { version = "1.0", features = ["derive"] }
-so-core = { path = "../so-core" }
-so-linalg = { path = "../so-linalg" }
-so-stats = { path = "../so-stats" }
 statrs = "0.17"
 approx = "0.5"
 rand.workspace = true
 serde_json = "1.0"
 rand_distr = "0.4"
 faer.workspace = true
+
+so-core = { workspace = true }
+so-linalg = { workspace = true }
+so-stats = { workspace = true }
