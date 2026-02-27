@@ -186,10 +186,20 @@ impl LinearMixedModelBuilder {
     
     /// Build fixed effects design matrix
     fn build_fixed_design_matrix(&self) -> Result<Array2<f64>> {
-        // Simplified: just intercept for now
-        // In practice, parse formula and create design matrix
-        let n = self.data.n_rows();
-        Ok(Array2::ones((n, 1)))  // Intercept only
+        // Parse fixed effects formula
+        let formula_str = if self.fixed_formula.contains('~') {
+            self.fixed_formula.clone()
+        } else {
+            // If no response in formula (for random effects), add placeholder
+            format!("__response__ ~ {}", self.fixed_formula)
+        };
+        
+        let formula = Formula::parse(&formula_str)
+            .map_err(|e| Error::FormulaError(format!("Failed to parse fixed formula: {}", e)))?;
+        
+        // Build design matrix (includes intercept if specified)
+        formula.build_matrix(&self.data)
+            .map_err(|e| Error::DataError(format!("Failed to build design matrix: {}", e)))
     }
     
     /// Build random effects design matrices
@@ -804,10 +814,22 @@ impl GLMMBuilder {
         })
     }
     
-    /// Build fixed effects design matrix (simplified - intercept only for now)
+    /// Build fixed effects design matrix
     fn build_fixed_design_matrix(&self) -> Result<Array2<f64>> {
-        let n = self.data.n_rows();
-        Ok(Array2::ones((n, 1)))  // Intercept only for now
+        // Parse fixed effects formula
+        let formula_str = if self.fixed_formula.contains('~') {
+            self.fixed_formula.clone()
+        } else {
+            // If no response in formula (for random effects), add placeholder
+            format!("__response__ ~ {}", self.fixed_formula)
+        };
+        
+        let formula = Formula::parse(&formula_str)
+            .map_err(|e| Error::FormulaError(format!("Failed to parse fixed formula: {}", e)))?;
+        
+        // Build design matrix (includes intercept if specified)
+        formula.build_matrix(&self.data)
+            .map_err(|e| Error::DataError(format!("Failed to build design matrix: {}", e)))
     }
     
     /// Build random effects design matrices (simplified)
