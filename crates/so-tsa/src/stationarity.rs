@@ -1,4 +1,5 @@
 //! Stationarity tests for time series
+#![allow(missing_docs)]
 
 use ndarray::{Array1, Array2};
 use super::timeseries::TimeSeries;

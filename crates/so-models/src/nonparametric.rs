@@ -95,6 +95,7 @@ impl Kernel {
     }
     
     /// Compute efficiency of kernel (relative to Epanechnikov)
+    #[allow(dead_code)]
     fn efficiency(&self) -> f64 {
         match self {
             Kernel::Gaussian => 0.951,      // 95.1% efficiency

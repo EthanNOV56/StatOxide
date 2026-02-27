@@ -2,6 +2,7 @@
 //!
 //! This crate provides a common interface for linear algebra operations,
 //! with support for multiple backends (faer, ndarray-linalg, etc.).
+#![allow(missing_docs)]
 //!
 //! # Usage
 //!

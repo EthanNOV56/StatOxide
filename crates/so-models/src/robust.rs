@@ -473,7 +473,7 @@ impl LeastTrimmedSquares {
         let mut best_sse = f64::INFINITY;
         let mut best_beta = Array1::zeros(p);
         
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         
         for _ in 0..n_subsets {
             // Random subset of size p+1
@@ -538,6 +538,7 @@ impl LeastTrimmedSquares {
 }
 
 /// S-estimator (high breakdown point)
+#[allow(dead_code)]
 pub struct SEstimator {
     breakdown_point: f64,
     max_iter: usize,

@@ -337,7 +337,7 @@ impl PredictionIntervals {
             
             for i in 0..n {
                 // Sample residual with replacement
-                let idx = rand::thread_rng().gen_range(0..r);
+                let idx = rand::rng().random_range(0..r);
                 let boot_error = residuals[idx];
                 boot_points[i] = points[i] + boot_error;
             }

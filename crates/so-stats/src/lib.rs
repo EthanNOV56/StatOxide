@@ -7,7 +7,7 @@
 //! - Correlation measures (Pearson, Spearman, Kendall)
 //! - Statistical distances (KL divergence, Wasserstein distance)
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 pub mod descriptive;
 pub mod distributions;

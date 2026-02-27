@@ -17,7 +17,7 @@ pub fn has_inf(arr: &Array1<f64>) -> bool {
 }
 
 /// Check if array contains any NaN or infinite values
-pub fn is_finite(arr: &Array1<f64>) -> bool {
+pub fn is_finite_array(arr: &Array1<f64>) -> bool {
     arr.iter().all(|&x| x.is_finite())
 }
 

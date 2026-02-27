@@ -21,9 +21,7 @@ use so_stats::tests::{
     t_test_one_sample as t_test_one_sample_rs,
     t_test_two_sample as t_test_two_sample_rs,
     t_test_paired as t_test_paired_rs,
-    chi_square_goodness_of_fit as chi_square_goodness_of_fit_rs,
     chi_square_test_independence as chi_square_test_independence_rs,
-    f_test_variances as f_test_variances_rs,
     anova_one_way as anova_one_way_rs,
     shapiro_wilk_test as shapiro_wilk_test_rs,
     Alternative, TestResult

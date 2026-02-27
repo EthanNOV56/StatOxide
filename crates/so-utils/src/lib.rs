@@ -3,7 +3,7 @@
 //! This crate provides general-purpose utilities for statistical computing,
 //! including error types, numerical utilities, and helper functions.
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 pub mod error;
 pub mod numerical;

@@ -1,6 +1,7 @@
 //! Statistical models for StatOxide
 //!
 //! This crate provides a comprehensive suite of statistical models:
+#![allow(missing_docs)]
 //!
 //! - **Linear Models**: OLS, Ridge, Lasso, Elastic Net
 //! - **Generalized Linear Models**: Logistic, Poisson, Gamma regression

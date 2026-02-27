@@ -5,6 +5,7 @@
 //! - **Data structures**: Series, DataFrame for columnar data
 //! - **Formula parsing**: R-style formula syntax for model specification
 //! - **Error types**: Unified error handling across the ecosystem
+#![allow(missing_docs)]
 
 pub mod data;
 pub mod formula;

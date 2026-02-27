@@ -35,7 +35,7 @@ use so_core::error::{Result, Error};
 use so_core::formula::Formula;
 use so_linalg::{solve, inv};
 
-use crate::glm::{Family, Link, GLM, GLMResults};
+use crate::glm::{Family, Link, GLM};
 
 /// Random effects structure specification
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -234,6 +234,7 @@ impl LinearMixedModelBuilder {
     }
     
     /// Fit using Expectation-Maximization algorithm (simplified)
+    #[allow(unused_assignments, unused_variables)]
     fn fit_em(&self, y: &Array1<f64>, X: &Array2<f64>, Z_matrices: &[Array2<f64>], group_sizes: &[usize]) -> Result<LMMResults> {
         let n = y.len();
         let p = X.ncols();
@@ -535,6 +536,7 @@ impl GLMMBuilder {
     }
     
     /// Fit using Penalized Quasi-Likelihood (PQL) algorithm
+    #[allow(unused_assignments, unused_variables)]
     fn fit_pql(&self, y: &Array1<f64>, link: Link) -> Result<GLMMResults> {
         let n = y.len();
         

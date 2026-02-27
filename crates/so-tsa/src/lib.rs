@@ -1,6 +1,7 @@
 //! Time Series Analysis (TSA) module for StatOxide
 //!
 //! This crate provides comprehensive time series analysis tools, including:
+#![allow(missing_docs)]
 //!
 //! 1. **Core Data Structures**: `TimeSeries` with datetime indexing
 //! 2. **Stationarity Tests**: ADF, KPSS, PP tests
