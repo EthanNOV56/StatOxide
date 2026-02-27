@@ -103,7 +103,8 @@ statoxide/
 │   ├── so-utils/          # Utility functions
 │   └── so-python/         # Python bindings (PyO3)
 ├── assets/logo.png        # Project logo
-└── LICENSE               # MIT license
+├── LICENSE-MIT           # MIT license
+└── LICENSE-APACHE-2.0    # Apache 2.0 license
 ```
 
 ## 📦 Installation
@@ -120,8 +121,8 @@ statoxide/
 
 ```bash
 # Clone the repository
-git clone https://github.com/EthanNOV56/so-dev.git
-cd so-dev
+git clone https://github.com/EthanNOV56/StatOxide.git
+cd StatOxide
 
 # Build Python bindings with maturin
 cd crates/so-python
@@ -182,7 +183,11 @@ python crates/so-python/test_api.py  # API demonstration
 
 ## 📄 License
 
-MIT AND Apache-2.0 - see [LICENSE](LICENSE) file for details.
+StatOxide is dual-licensed under both:
+- **MIT License**: See [LICENSE-MIT](LICENSE-MIT) for details
+- **Apache License 2.0**: See [LICENSE-APACHE-2.0](LICENSE-APACHE-2.0) for details
+
+You may use StatOxide under either license at your option.
 
 ## 🙏 Acknowledgments
 
