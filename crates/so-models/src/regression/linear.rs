@@ -185,14 +185,34 @@ impl OLS {
         
         // Compute F-statistic
         let (f_statistic, f_p_value) = if self.intercept && df_model > 0 && df_residual > 0 {
-            let f_stat = (r_squared / df_model as f64) / ((1.0 - r_squared) / df_residual as f64);
-            let x = df_model as f64 * f_stat / (df_residual as f64 + df_model as f64 * f_stat);
-            // Ensure x is in [0, 1] for beta_reg
-            let x_clamped = x.clamp(0.0, 1.0);
-            let f_p = 1.0 - statrs::function::beta::beta_reg(df_model as f64 / 2.0, 
-                df_residual as f64 / 2.0, 
-                x_clamped);
-            (Some(f_stat), Some(f_p))
+            // Handle edge case where r_squared is exactly 1.0
+            if (1.0 - r_squared).abs() < f64::EPSILON {
+                // Perfect fit, F-statistic is infinite, p-value is 0
+                (Some(f64::INFINITY), Some(0.0))
+            } else if r_squared.abs() < f64::EPSILON {
+                // No relationship, F-statistic is 0
+                (Some(0.0), Some(1.0))
+            } else {
+                let f_stat = (r_squared / df_model as f64) / ((1.0 - r_squared) / df_residual as f64);
+                
+                // Check for invalid F-statistic
+                if f_stat.is_nan() || f_stat.is_infinite() {
+                    (Some(f_stat), None)
+                } else {
+                    let x = df_model as f64 * f_stat / (df_residual as f64 + df_model as f64 * f_stat);
+                    // Ensure x is in [0, 1] for beta_reg
+                    let x_clamped = x.clamp(0.0, 1.0);
+                    // Handle edge case where x_clamped might be exactly 0 or 1 due to floating point
+                    let x_safe = if x_clamped <= 0.0 { f64::MIN_POSITIVE } else if x_clamped >= 1.0 { 1.0 - f64::EPSILON } else { x_clamped };
+                    
+                    // beta_reg returns f64, may panic if x_safe is not in (0, 1)
+                    // x_safe is guaranteed to be in (0, 1) by construction
+                    let beta_val = statrs::function::beta::beta_reg(df_model as f64 / 2.0, 
+                        df_residual as f64 / 2.0, 
+                        x_safe);
+                    (Some(f_stat), Some(1.0 - beta_val))
+                }
+            }
         } else {
             (None, None)
         };

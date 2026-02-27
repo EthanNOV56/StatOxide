@@ -3,7 +3,7 @@ requires = ["maturin>=1.10,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "so-python"
+name = "statoxide"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Rust",
@@ -11,3 +11,8 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
+description = "High-performance statistical computing library written in Rust"
+readme = "../../README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["statistics", "regression", "machine-learning", "data-science"]
+authors = ["EthanNov56 <yichen_1226@163.com>", "tip <tip@example.com>"]

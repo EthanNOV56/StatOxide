@@ -192,6 +192,7 @@ fn statoxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Models module
     let models_module = PyModule::new(m.py(), "models")?;
     models_module.add_function(wrap_pyfunction!(linear_regression, &models_module)?)?;
+    models_module.add_function(wrap_pyfunction!(mixed_effects, &models_module)?)?;
     m.add_submodule(&models_module)?;
     
     // TSA module
@@ -206,6 +207,13 @@ fn statoxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
     
     // Top-level functions
     m.add_function(wrap_pyfunction!(version, m)?)?;
+    
+    // Add commonly used functions to top level for convenience
+    m.add_function(wrap_pyfunction!(mean, m)?)?;
+    m.add_function(wrap_pyfunction!(std_dev, m)?)?;
+    m.add_function(wrap_pyfunction!(correlation, m)?)?;
+    m.add_function(wrap_pyfunction!(descriptive_summary, m)?)?;
+    m.add_function(wrap_pyfunction!(train_test_split, m)?)?;
     
     Ok(())
 }
@@ -293,6 +301,26 @@ fn linear_regression(py: Python, _x: Vec<Vec<f64>>, _y: Vec<f64>) -> PyResult<Py
     dict.set_item("coefficients", vec![0.0, 0.0])?;
     dict.set_item("r_squared", 0.0)?;
     dict.set_item("message", "Linear regression placeholder - implement using so-models")?;
+    
+    Ok(dict.into())
+}
+
+/// Fit mixed effects model (linear mixed model)
+#[pyfunction]
+fn mixed_effects(py: Python, data: &PyDataFrame, formula: String) -> PyResult<Py<PyDict>> {
+    // TODO: Implement actual mixed effects model using so-models
+    let dict = PyDict::new(py);
+    
+    // For now, return a placeholder result
+    dict.set_item("fixed_effects", Vec::<f64>::new())?;
+    dict.set_item("random_variances", Vec::<f64>::new())?;
+    dict.set_item("residual_variance", 0.0)?;
+    dict.set_item("log_likelihood", 0.0)?;
+    dict.set_item("aic", 0.0)?;
+    dict.set_item("bic", 0.0)?;
+    dict.set_item("message", "Mixed effects model placeholder - implement using so-models::mixed")?;
+    dict.set_item("formula", formula)?;
+    dict.set_item("n_obs", data.n_rows())?;
     
     Ok(dict.into())
 }
