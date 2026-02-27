@@ -13,12 +13,12 @@ else:
 
 try:
     # Import the module
-    import so_python as statoxide
-    print("✅ Successfully imported so_python")
+    import statoxide as so
+    print("✅ Successfully imported statoxide as 'so'")
     
     # Check available attributes
     print("\nAvailable top-level attributes:")
-    attrs = [attr for attr in dir(statoxide) if not attr.startswith('_')]
+    attrs = [attr for attr in dir(so) if not attr.startswith('_')]
     print(f"  {len(attrs)} public attributes")
     
     # Look for key classes
@@ -27,7 +27,7 @@ try:
                    'ARIMA', 'ARIMAResults', 'GARCH', 'GARCHResults']
     
     for cls in key_classes:
-        if hasattr(statoxide, cls):
+        if hasattr(so, cls):
             print(f"  ✅ {cls}")
         else:
             print(f"  ❌ {cls} (missing)")
@@ -35,7 +35,7 @@ try:
     # Test 1: Create Series and DataFrame
     print("\n--- Test 1: Series and DataFrame ---")
     try:
-        series = statoxide.Series("test", [1.0, 2.0, 3.0, 4.0, 5.0])
+        series = so.Series("test", [1.0, 2.0, 3.0, 4.0, 5.0])
         print(f"  Series created: {series}")
         print(f"  Series mean: {series.mean()}")
         
@@ -47,13 +47,13 @@ try:
     # Test 2: GLM Family and Link
     print("\n--- Test 2: GLM Family and Link ---")
     try:
-        family_gaussian = statoxide.Family.gaussian()
+        family_gaussian = so.Family.gaussian()
         print(f"  Family.gaussian(): {family_gaussian}")
         
-        link_identity = statoxide.Link.identity()
+        link_identity = so.Link.identity()
         print(f"  Link.identity(): {link_identity}")
         
-        link_logit = statoxide.Link.logit()
+        link_logit = so.Link.logit()
         print(f"  Link.logit(): {link_logit}")
     except Exception as e:
         print(f"  ⚠️ Family/Link test failed: {e}")
@@ -61,9 +61,9 @@ try:
     # Test 3: GLM Builder
     print("\n--- Test 3: GLM Builder ---")
     try:
-        builder = statoxide.GLMBuilder()
-        builder.family(statoxide.Family.gaussian())
-        builder.link(statoxide.Link.identity())
+        builder = so.GLMBuilder()
+        builder.family(so.Family.gaussian())
+        builder.link(so.Link.identity())
         builder.intercept(True)
         builder.max_iter(100)
         builder.tol(1e-6)
@@ -81,7 +81,7 @@ try:
                  "2024-01-05", "2024-01-06", "2024-01-07", "2024-01-08",
                  "2024-01-09", "2024-01-10"]
         
-        ts = statoxide.TimeSeries.from_vectors(values, dates)
+        ts = so.TimeSeries.from_vectors(values, dates)
         print(f"  TimeSeries created: {ts}")
         print(f"  TimeSeries length: {ts.len()}")
         print(f"  TimeSeries mean: {ts.mean()}")
@@ -91,7 +91,7 @@ try:
     # Test 5: ARIMA
     print("\n--- Test 5: ARIMA ---")
     try:
-        arima = statoxide.ARIMA(1, 0, 1)
+        arima = so.ARIMA(1, 0, 1)
         arima.with_constant(True)
         print(f"  ARIMA created: {arima}")
     except Exception as e:
@@ -100,7 +100,7 @@ try:
     # Test 6: GARCH
     print("\n--- Test 6: GARCH ---")
     try:
-        garch = statoxide.GARCH(1, 1)
+        garch = so.GARCH(1, 1)
         garch.distribution("normal")
         print(f"  GARCH created: {garch}")
     except Exception as e:

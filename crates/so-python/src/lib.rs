@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyList};
 use pyo3::exceptions::{PyValueError, PyRuntimeError};
 use ndarray::Array1;
 use std::collections::HashMap;
@@ -734,9 +734,47 @@ impl PyARIMA {
     }
     
     /// Fit the ARIMA model
-    fn fit(&mut self, ts: &PyTimeSeries) -> PyResult<PyARIMAResults> {
+    /// 
+    /// Accepts multiple input types:
+    /// - PyTimeSeries object
+    /// - List of floats (Vec<f64>)
+    /// - Any object convertible to a list of floats
+    fn fit(&mut self, py: Python, data: Py<PyAny>) -> PyResult<PyARIMAResults> {
+        // Get reference to Python object
+        let data_ref = data.bind(py);
+        
+        // Try to convert input to TimeSeries
+        let timeseries = if let Ok(ts) = data_ref.extract::<PyRef<PyTimeSeries>>() {
+            // Already a TimeSeries
+            ts.inner.clone()
+        } else if let Ok(vec) = data_ref.extract::<Vec<f64>>() {
+            // Vector of floats - create TimeSeries with index as timestamps
+            let timestamps: Vec<i64> = (0..vec.len() as i64).collect();
+            let values_array = ndarray::Array1::from_vec(vec);
+            TimeSeries::new("series", timestamps, values_array, None)
+                .map_err(|e| PyRuntimeError::new_err(format!("Failed to create TimeSeries: {:?}", e)))?
+        } else if let Ok(list) = data_ref.cast::<PyList>() {
+            // Python list - extract as floats
+            let mut vec = Vec::with_capacity(list.len());
+            for i in 0..list.len() {
+                let item = list.get_item(i)?;
+                let val: f64 = item.extract().map_err(|_| 
+                    PyValueError::new_err("List must contain only numeric values")
+                )?;
+                vec.push(val);
+            }
+            let timestamps: Vec<i64> = (0..vec.len() as i64).collect();
+            let values_array = ndarray::Array1::from_vec(vec);
+            TimeSeries::new("series", timestamps, values_array, None)
+                .map_err(|e| PyRuntimeError::new_err(format!("Failed to create TimeSeries: {:?}", e)))?
+        } else {
+            return Err(PyValueError::new_err(
+                "Input must be a TimeSeries, list of floats, or convertible to list of floats"
+            ));
+        };
+        
         if let Some(builder) = self.builder.take() {
-            match builder.fit(&ts.inner) {
+            match builder.fit(&timeseries) {
                 Ok(results) => Ok(PyARIMAResults { inner: results }),
                 Err(e) => Err(PyRuntimeError::new_err(format!("ARIMA fitting failed: {:?}", e))),
             }
@@ -877,15 +915,47 @@ impl PyGARCH {
     }
     
     /// Fit the GARCH model to residuals
-    fn fit(&mut self, residuals: Vec<f64>) -> PyResult<PyGARCHResults> {
-        // Convert residuals to TimeSeries
-        let timestamps: Vec<i64> = (0..residuals.len() as i64).collect();
-        let values = ndarray::Array1::from_vec(residuals);
-        let ts = TimeSeries::new("residuals", timestamps, values, None)
-            .map_err(|e| PyRuntimeError::new_err(format!("Failed to create TimeSeries: {:?}", e)))?;
+    /// 
+    /// Accepts multiple input types:
+    /// - List of floats (Vec<f64>) - residuals
+    /// - PyTimeSeries object  
+    /// - Any object convertible to a list of floats
+    fn fit(&mut self, py: Python, data: Py<PyAny>) -> PyResult<PyGARCHResults> {
+        // Get reference to Python object
+        let data_ref = data.bind(py);
+        
+        // Try to convert input to TimeSeries
+        let timeseries = if let Ok(ts) = data_ref.extract::<PyRef<PyTimeSeries>>() {
+            // Already a TimeSeries
+            ts.inner.clone()
+        } else if let Ok(vec) = data_ref.extract::<Vec<f64>>() {
+            // Vector of floats - create TimeSeries with index as timestamps
+            let timestamps: Vec<i64> = (0..vec.len() as i64).collect();
+            let values_array = ndarray::Array1::from_vec(vec);
+            TimeSeries::new("residuals", timestamps, values_array, None)
+                .map_err(|e| PyRuntimeError::new_err(format!("Failed to create TimeSeries: {:?}", e)))?
+        } else if let Ok(list) = data_ref.cast::<PyList>() {
+            // Python list - extract as floats
+            let mut vec = Vec::with_capacity(list.len());
+            for i in 0..list.len() {
+                let item = list.get_item(i)?;
+                let val: f64 = item.extract().map_err(|_| 
+                    PyValueError::new_err("List must contain only numeric values")
+                )?;
+                vec.push(val);
+            }
+            let timestamps: Vec<i64> = (0..vec.len() as i64).collect();
+            let values_array = ndarray::Array1::from_vec(vec);
+            TimeSeries::new("residuals", timestamps, values_array, None)
+                .map_err(|e| PyRuntimeError::new_err(format!("Failed to create TimeSeries: {:?}", e)))?
+        } else {
+            return Err(PyValueError::new_err(
+                "Input must be a TimeSeries, list of floats, or convertible to list of floats"
+            ));
+        };
         
         if let Some(builder) = self.builder.take() {
-            match builder.fit(&ts) {
+            match builder.fit(&timeseries) {
                 Ok(results) => Ok(PyGARCHResults { inner: results }),
                 Err(e) => Err(PyRuntimeError::new_err(format!("GARCH fitting failed: {:?}", e))),
             }
@@ -986,7 +1056,7 @@ impl PyGARCHResults {
 
 /// StatOxide Python module
 #[pymodule]
-#[pyo3(name = "so_python")]
+#[pyo3(name = "statoxide")]
 fn statoxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Register core classes
     m.add_class::<PySeries>()?;

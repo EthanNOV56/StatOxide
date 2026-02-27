@@ -11,10 +11,10 @@ try:
     # Test different import styles
     print("Testing statoxide Python module imports...")
     
-    # Test 1: Direct import
-    import statoxide
-    print("✓ Successfully imported statoxide")
-    print(f"  Version: {statoxide.version()}")
+    # Test 1: Direct import with alias
+    import statoxide as so
+    print("✓ Successfully imported statoxide as 'so'")
+    print(f"  Version: {so.version()}")
     
     # Test 2: Import core classes
     from statoxide import DataFrame, Series, Formula
@@ -32,42 +32,38 @@ try:
     print("\nTesting submodule access:")
     
     # Stats submodule
-    import statoxide.stats as stats
-    mean_x = stats.mean([1.0, 2.0, 3.0, 4.0, 5.0])
-    print(f"  stats.mean: {mean_x}")
+    mean_x = so.stats.mean([1.0, 2.0, 3.0, 4.0, 5.0])
+    print(f"  so.stats.mean: {mean_x}")
     
     # Models submodule
-    import statoxide.models as models
-    print(f"  models module available")
+    print(f"  so.models module available")
     
     # TSA submodule  
-    import statoxide.tsa as tsa
-    print(f"  tsa module available")
+    print(f"  so.tsa module available")
     
     # Utils submodule
-    import statoxide.utils as utils
-    train, test = utils.train_test_split([1.0, 2.0, 3.0, 4.0, 5.0], 0.2)
-    print(f"  utils.train_test_split: train={len(train)}, test={len(test)}")
+    train, test = so.utils.train_test_split([1.0, 2.0, 3.0, 4.0, 5.0], 0.2)
+    print(f"  so.utils.train_test_split: train={len(train)}, test={len(test)}")
     
     # Test 4: Top-level functions
     print("\nTesting top-level functions:")
-    mean_val = statoxide.mean([1.0, 2.0, 3.0])
-    print(f"  statoxide.mean: {mean_val}")
+    mean_val = so.mean([1.0, 2.0, 3.0])
+    print(f"  so.mean: {mean_val}")
     
-    corr = statoxide.correlation([1.0, 2.0, 3.0], [2.0, 4.0, 6.0])
-    print(f"  statoxide.correlation: {corr}")
+    corr = so.correlation([1.0, 2.0, 3.0], [2.0, 4.0, 6.0])
+    print(f"  so.correlation: {corr}")
     
     # Test 5: Mixed effects model (placeholder)
     print("\nTesting mixed effects model (placeholder):")
-    result = models.mixed_effects(df, "y ~ x + (1 | group)")
+    result = so.models.mixed_effects(df, "y ~ x + (1 | group)")
     print(f"  Mixed effects result keys: {list(result.keys())}")
     
     print("\n✅ All imports successful!")
     print("\nAvailable import styles:")
-    print("1. import statoxide")
+    print("1. import statoxide as so")
     print("2. from statoxide import DataFrame, Series, Formula")
-    print("3. import statoxide.stats, statoxide.models, etc.")
-    print("4. Direct function calls: statoxide.mean(), statoxide.correlation()")
+    print("3. Access submodules via so.stats, so.models, etc.")
+    print("4. Direct function calls: so.mean(), so.correlation()")
     
 except ImportError as e:
     print(f"❌ Import error: {e}")
