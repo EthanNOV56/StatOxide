@@ -597,9 +597,18 @@ mod tests {
         let model = Ridge::new(0.1); // Small regularization
         let results = model.fit(&X, &y).unwrap();
         
+        // Debug print coefficients
+        println!("Ridge coefficients: {:?}", results.coefficients);
+        println!("Expected: [2.0, 3.0]");
+        println!("Difference: [{:.4}, {:.4}]", 
+                 results.coefficients[0] - 2.0,
+                 results.coefficients[1] - 3.0);
+        
         // With small alpha, results should be similar to OLS
-        assert!((results.coefficients[0] - 2.0).abs() < 0.1);
-        assert!((results.coefficients[1] - 3.0).abs() < 0.1);
+        assert!((results.coefficients[0] - 2.0).abs() < 0.1,
+                "Intercept coefficient {} not close to 2.0", results.coefficients[0]);
+        assert!((results.coefficients[1] - 3.0).abs() < 0.1,
+                "Slope coefficient {} not close to 3.0", results.coefficients[1]);
     }
 
     #[test]
