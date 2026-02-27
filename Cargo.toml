@@ -31,12 +31,12 @@ nom = "7.1"
 anyhow = "1.0"
 serde_json = "1.0"
 
-so-core = "0.2.0"
-so-linalg = "0.2.0"
-so-models = "0.2.0"
-so-stats = "0.2.0"
-so-tsa = "0.2.0"
-so-utils = "0.2.0"
+so-core = { version = "0.2.0", path = "crates/so-core", default-features = false }
+so-linalg = { version = "0.2.0", path = "crates/so-linalg", default-features = false }
+so-models = { version = "0.2.0", path = "crates/so-models", default-features = false }
+so-stats = { version = "0.2.0", path = "crates/so-stats", default-features = false }
+so-tsa = { version = "0.2.0", path = "crates/so-tsa", default-features = false }
+so-utils = { version = "0.2.0", path = "crates/so-utils", default-features = false }
 
 [workspace.dev-dependencies]
 criterion = "0.5"
