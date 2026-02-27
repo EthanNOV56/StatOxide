@@ -1,0 +1,331 @@
+use pyo3::prelude::*;
+use pyo3::types::PyDict;
+use pyo3::exceptions::PyValueError;
+use ndarray::Array1;
+use std::collections::HashMap;
+
+use so_core::data::{DataFrame, Series};
+use so_core::formula::Formula;
+use so_core::error::Error as CoreError;
+
+/// Python wrapper for StatOxide Series
+#[pyclass(name = "Series")]
+struct PySeries {
+    inner: Series,
+}
+
+#[pymethods]
+impl PySeries {
+    /// Create a new Series from Python list or array
+    #[new]
+    fn new(name: String, data: Vec<f64>) -> PyResult<Self> {
+        let array = Array1::from_vec(data);
+        Ok(PySeries {
+            inner: Series::new(name, array),
+        })
+    }
+    
+    /// Get the name of the series
+    #[getter]
+    fn name(&self) -> String {
+        self.inner.name().to_string()
+    }
+    
+    /// Get the length of the series
+    #[getter]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+    
+    /// Check if series is empty
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+    
+    /// Compute mean of series
+    fn mean(&self) -> Option<f64> {
+        self.inner.mean()
+    }
+    
+    /// Compute standard deviation
+    fn std(&self, ddof: f64) -> Option<f64> {
+        self.inner.std(ddof)
+    }
+    
+    /// Compute variance
+    fn var(&self, ddof: f64) -> Option<f64> {
+        self.inner.var(ddof)
+    }
+    
+    /// Get minimum value
+    fn min(&self) -> Option<f64> {
+        self.inner.min()
+    }
+    
+    /// Get maximum value
+    fn max(&self) -> Option<f64> {
+        self.inner.max()
+    }
+    
+    /// Compute quantile
+    fn quantile(&self, q: f64) -> Option<f64> {
+        self.inner.quantile(q)
+    }
+    
+    /// Convert to Python list
+    fn to_list(&self) -> Vec<f64> {
+        self.inner.data().to_vec()
+    }
+    
+    /// String representation
+    fn __repr__(&self) -> String {
+        format!("Series(name='{}', len={})", self.inner.name(), self.inner.len())
+    }
+}
+
+/// Python wrapper for StatOxide DataFrame
+#[pyclass(name = "DataFrame")]
+struct PyDataFrame {
+    inner: DataFrame,
+}
+
+#[pymethods]
+impl PyDataFrame {
+    /// Create a new DataFrame from a dictionary of columns
+    #[new]
+    fn new(data: HashMap<String, Vec<f64>>) -> PyResult<Self> {
+        let mut columns = HashMap::new();
+        
+        for (name, values) in data {
+            let array = Array1::from_vec(values);
+            columns.insert(name.clone(), Series::new(name, array));
+        }
+        
+        match DataFrame::from_series(columns) {
+            Ok(df) => Ok(PyDataFrame { inner: df }),
+            Err(e) => Err(PyValueError::new_err(format!("Error creating DataFrame: {:?}", e))),
+        }
+    }
+    
+    /// Get number of rows
+    #[getter]
+    fn n_rows(&self) -> usize {
+        self.inner.n_rows()
+    }
+    
+    /// Get number of columns
+    #[getter]
+    fn n_cols(&self) -> usize {
+        self.inner.n_cols()
+    }
+    
+    /// Get column names
+    fn columns(&self) -> Vec<String> {
+        self.inner.column_names()
+    }
+    
+    /// Get a column by name
+    fn get_column(&self, name: &str) -> PyResult<PySeries> {
+        match self.inner.column(name) {
+            Some(series) => Ok(PySeries { inner: series.clone() }),
+            None => Err(PyValueError::new_err(format!("Column '{}' not found", name))),
+        }
+    }
+    
+    /// Add a column to the DataFrame
+    fn with_column(&mut self, series: &PySeries) -> PyResult<()> {
+        let df = self.inner.clone().with_column(series.inner.clone())
+            .map_err(|e| PyValueError::new_err(format!("Error adding column: {:?}", e)))?;
+        self.inner = df;
+        Ok(())
+    }
+    
+    /// String representation
+    fn __repr__(&self) -> String {
+        format!("DataFrame(rows={}, cols={})", self.inner.n_rows(), self.inner.n_cols())
+    }
+}
+
+/// Python wrapper for StatOxide Formula
+#[pyclass(name = "Formula")]
+struct PyFormula {
+    inner: Formula,
+}
+
+#[pymethods]
+impl PyFormula {
+    /// Parse a formula string
+    #[new]
+    fn new(formula: String) -> PyResult<Self> {
+        match Formula::parse(&formula) {
+            Ok(f) => Ok(PyFormula { inner: f }),
+            Err(e) => Err(PyValueError::new_err(format!("Error parsing formula: {:?}", e))),
+        }
+    }
+    
+    /// Get all variable names in the formula
+    fn variables(&self) -> Vec<String> {
+        self.inner.variables().into_iter().collect()
+    }
+    
+    /// String representation
+    fn __repr__(&self) -> String {
+        format!("Formula({:?})", self.inner)
+    }
+}
+
+/// StatOxide Python module
+#[pymodule]
+fn statoxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    // Register core classes
+    m.add_class::<PySeries>()?;
+    m.add_class::<PyDataFrame>()?;
+    m.add_class::<PyFormula>()?;
+    
+    // Basic functions module
+    let stats_module = PyModule::new(m.py(), "stats")?;
+    stats_module.add_function(wrap_pyfunction!(mean, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(std_dev, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(correlation, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(descriptive_summary, &stats_module)?)?;
+    m.add_submodule(&stats_module)?;
+    
+    // Models module
+    let models_module = PyModule::new(m.py(), "models")?;
+    models_module.add_function(wrap_pyfunction!(linear_regression, &models_module)?)?;
+    m.add_submodule(&models_module)?;
+    
+    // TSA module
+    let tsa_module = PyModule::new(m.py(), "tsa")?;
+    tsa_module.add_function(wrap_pyfunction!(fit_arima, &tsa_module)?)?;
+    m.add_submodule(&tsa_module)?;
+    
+    // Utilities module
+    let utils_module = PyModule::new(m.py(), "utils")?;
+    utils_module.add_function(wrap_pyfunction!(train_test_split, &utils_module)?)?;
+    m.add_submodule(&utils_module)?;
+    
+    // Top-level functions
+    m.add_function(wrap_pyfunction!(version, m)?)?;
+    
+    Ok(())
+}
+
+/// Compute mean of data
+#[pyfunction]
+fn mean(data: Vec<f64>) -> PyResult<f64> {
+    if data.is_empty() {
+        return Ok(f64::NAN);
+    }
+    Ok(data.iter().sum::<f64>() / data.len() as f64)
+}
+
+/// Compute standard deviation of data
+#[pyfunction]
+fn std_dev(data: Vec<f64>) -> PyResult<f64> {
+    if data.len() < 2 {
+        return Ok(f64::NAN);
+    }
+    let mean_val = mean(data.clone())?;
+    let variance = data.iter()
+        .map(|&x| (x - mean_val).powi(2))
+        .sum::<f64>() / (data.len() as f64 - 1.0);
+    Ok(variance.sqrt())
+}
+
+/// Compute correlation between two variables
+#[pyfunction]
+fn correlation(x: Vec<f64>, y: Vec<f64>) -> PyResult<f64> {
+    if x.len() != y.len() || x.len() < 2 {
+        return Ok(f64::NAN);
+    }
+    
+    let x_mean = x.iter().sum::<f64>() / x.len() as f64;
+    let y_mean = y.iter().sum::<f64>() / y.len() as f64;
+    
+    let covariance = x.iter().zip(y.iter())
+        .map(|(&xi, &yi)| (xi - x_mean) * (yi - y_mean))
+        .sum::<f64>() / (x.len() as f64 - 1.0);
+    
+    let x_std = std_dev(x.clone())?;
+    let y_std = std_dev(y.clone())?;
+    
+    if x_std == 0.0 || y_std == 0.0 {
+        Ok(0.0)
+    } else {
+        Ok(covariance / (x_std * y_std))
+    }
+}
+
+/// Compute descriptive statistics summary
+#[pyfunction]
+fn descriptive_summary(py: Python, data: Vec<f64>) -> PyResult<Py<PyDict>> {
+    let dict = PyDict::new(py);
+    dict.set_item("count", data.len())?;
+    
+    if !data.is_empty() {
+        let mean_val = data.iter().sum::<f64>() / data.len() as f64;
+        dict.set_item("mean", mean_val)?;
+        
+        if data.len() >= 2 {
+            let variance = data.iter()
+                .map(|&x| (x - mean_val).powi(2))
+                .sum::<f64>() / (data.len() as f64 - 1.0);
+            dict.set_item("std", variance.sqrt())?;
+            dict.set_item("variance", variance)?;
+            
+            // Min and max
+            if let (Some(min), Some(max)) = (data.iter().min_by(|a, b| a.partial_cmp(b).unwrap()), 
+                                           data.iter().max_by(|a, b| a.partial_cmp(b).unwrap())) {
+                dict.set_item("min", *min)?;
+                dict.set_item("max", *max)?;
+            }
+        }
+    }
+    
+    Ok(dict.into())
+}
+
+/// Fit linear regression model
+#[pyfunction]
+fn linear_regression(py: Python, X: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Py<PyDict>> {
+    // TODO: Implement actual linear regression using so-models
+    let dict = PyDict::new(py);
+    dict.set_item("coefficients", vec![0.0, 0.0])?;
+    dict.set_item("r_squared", 0.0)?;
+    dict.set_item("message", "Linear regression placeholder - implement using so-models")?;
+    
+    Ok(dict.into())
+}
+
+/// Fit ARIMA model
+#[pyfunction]
+fn fit_arima(py: Python, data: Vec<f64>, p: usize, d: usize, q: usize) -> PyResult<Py<PyDict>> {
+    // TODO: Implement actual ARIMA using so-tsa
+    let dict = PyDict::new(py);
+    dict.set_item("order", (p, d, q))?;
+    dict.set_item("aic", 0.0)?;
+    dict.set_item("message", "ARIMA placeholder - implement using so-tsa")?;
+    
+    Ok(dict.into())
+}
+
+/// Split data into training and test sets
+#[pyfunction]
+fn train_test_split(data: Vec<f64>, test_size: f64) -> PyResult<(Vec<f64>, Vec<f64>)> {
+    if test_size <= 0.0 || test_size >= 1.0 {
+        return Err(PyValueError::new_err("test_size must be between 0 and 1"));
+    }
+    
+    let split_idx = (data.len() as f64 * (1.0 - test_size)) as usize;
+    let train = data[..split_idx].to_vec();
+    let test = data[split_idx..].to_vec();
+    
+    Ok((train, test))
+}
+
+/// Get library version
+#[pyfunction]
+fn version() -> PyResult<String> {
+    Ok("0.1.0".to_string())
+}

@@ -1,251 +1,213 @@
-# StatOxide
+<img src="assets/logo.png" width="330">
 
-A high-performance statistical modeling library with Python/R bindings, designed as a modern replacement for statsmodels.
+# StatOxide: High-performance statistical computing in Rust with Python bindings
 
-## Features
+**StatOxide** is a modern, high-performance statistical computing library written in Rust, with comprehensive Python bindings via PyO3. Designed for data scientists, statisticians, and researchers who need both performance and productivity.
 
-- **Formula Interface**: R-style formula syntax (e.g., `y ~ x1 + x2 + x1:x2`)
+## 🚀 Features
+
+### 📊 Core Data Structures
+- **Series**: Columnar data with metadata (name, dtype, levels)
+- **DataFrame**: Tabular data structure with column operations
+- **Formula**: R-style formula parsing for model specification
+
+### 📈 Statistical Functions
+- **Descriptive Statistics**: Mean, variance, skewness, kurtosis, quantiles
+- **Probability Distributions**: 12 continuous + 6 discrete distributions
+- **Statistical Tests**: t-test, chi-square, ANOVA, correlation tests
+- **Correlation Measures**: Pearson, Spearman, Kendall tau
+
+### 🧮 Statistical Models
 - **Linear Models**: OLS, Ridge, Lasso, Elastic Net with proper inference
-- **GLMs**: Logistic, Poisson, Gamma, Negative Binomial regression
-- **Time Series**: ARIMA, GARCH, state space models
-- **Mixed Effects**: Linear and generalized linear mixed models
-- **High Performance**: Rust backend with zero-copy data sharing
-- **Python Integration**: Seamless numpy/pandas/scikit-learn compatibility
+- **Generalized Linear Models**: Logistic, Poisson, Gamma, Negative Binomial regression
+- **Mixed Effects Models**: Linear and GLMMs with EM algorithm estimation
+- **Robust Statistics**: M-estimators, S-estimators, MM-estimators
+- **Nonparametric Methods**: Kernel regression, local regression, smoothing splines
 
-## Quick Start
+### 📉 Time Series Analysis
+- **Core Structures**: `TimeSeries` with datetime indexing
+- **ARIMA Models**: AR, MA, ARMA, ARIMA, SARIMA
+- **GARCH Models**: ARCH, GARCH for volatility modeling
+- **Decomposition**: STL, moving averages, Hodrick-Prescott filter
+- **Forecasting**: Point forecasts, prediction intervals
+
+### 🛠️ Utilities
+- **Linear Algebra**: Matrix operations, solvers, decompositions
+- **Random Generation**: Distributions, bootstrap, train-test split
+- **Data Validation**: Type checking, missing value detection
+- **Numerical Methods**: Softmax, standardization, normalization
+
+## 🐍 Python API
+
+StatOxide provides a complete Python interface through PyO3 bindings:
 
 ```python
-import statoxide as so
-import numpy as np
+import statoxide
+import statoxide.core as soc
+import statoxide.stats as sos
 
-# Create data
-data = so.DataFrame.from_dict({
-    "y": [1.0, 2.0, 3.0, 4.0, 5.0],
-    "x1": [1.0, 2.0, 3.0, 4.0, 5.0],
-    "x2": [2.0, 3.0, 4.0, 5.0, 6.0],
+# Core data structures
+df = soc.DataFrame({
+    "x": [1.0, 2.0, 3.0, 4.0, 5.0],
+    "y": [2.0, 4.0, 5.0, 4.0, 5.0]
 })
 
-# Fit OLS regression using R-style formula
-results = so.ols("y ~ x1 + x2", data)
+series = df.get_column("x")
+print(f"Mean of x: {series.mean():.2f}")
+print(f"Std of x: {series.std(1.0):.2f}")
 
-print(results.summary())
-# Linear Regression Results
-# ========================
-# R-squared: 0.9722, Adjusted R-squared: 0.9444
-# F-statistic: 17.50, p-value: 5.787e-02
-# Residual Std. Error: 0.4082 (df = 2)
-# 
-# Coefficients:
-#               Estimate Std. Error t value Pr(>|t|)
-# (Intercept)     0.0000     0.7071   0.000   1.0000
-# x1              1.0000     0.7071   1.414   0.2929
-# x2              0.0000     0.7071   0.000   1.0000
-# 
-# Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+# Statistical functions
+print(f"Correlation: {sos.correlation(df.get_column('x').to_list(), 
+                                      df.get_column('y').to_list()):.3f}")
 
-# Ridge regression
-ridge_results = so.ridge("y ~ x1 + x2", data, alpha=0.5)
+summary = sos.descriptive_summary([1.0, 2.0, 3.0, 4.0, 5.0])
+print(f"Summary: {summary}")
 
-# Chainable Rust-style API (coming soon)
-# results = (so.Model(data)
-#     .formula("y ~ x1 + x2")
-#     .ridge(alpha=0.5)
-#     .fit()
-#     .summary())
+# Formula parsing
+formula = soc.Formula("y ~ x + x^2")
+print(f"Formula variables: {formula.variables()}")
+
+# Models
+import statoxide.models as som
+result = som.linear_regression([[1, 1], [1, 2], [1, 3]], [5, 8, 11])
+print(f"Regression coefficients: {result['coefficients']}")
+
+# Mixed effects models
+mixed_results = som.mixed_effects("y ~ x + (1 | group)", data)
+print(f"Random effect variance: {mixed_results.random_variances}")
+
+# Time series
+import statoxide.tsa as sot
+arima_result = sot.fit_arima([1.0, 2.0, 3.0, 4.0, 5.0], 1, 0, 1)
+print(f"ARIMA AIC: {arima_result['aic']}")
+
+# Utilities
+import statoxide.utils as sou
+train, test = sou.train_test_split([1.0, 2.0, 3.0, 4.0, 5.0], 0.2)
+print(f"Train: {train}, Test: {test}")
 ```
 
-## Installation
+## 🏗️ Architecture
 
-### From PyPI (Coming Soon)
+StatOxide is organized as a multi-crate Rust workspace:
 
-```bash
-pip install statoxide
+```
+statoxide/
+├── Cargo.toml              # Workspace configuration
+├── crates/
+│   ├── so-core/           # Core data structures & formula parsing
+│   ├── so-linalg/         # Linear algebra abstraction
+│   ├── so-stats/          # Statistical functions & distributions
+│   ├── so-models/         # Statistical models (regression, GLM, mixed effects, etc.)
+│   ├── so-tsa/            # Time series analysis
+│   ├── so-utils/          # Utility functions
+│   └── so-python/         # Python bindings (PyO3)
+├── assets/logo.png        # Project logo
+└── LICENSE               # MIT license
 ```
 
-### From Source
+## 📦 Installation
+
+### Prerequisites
+
+1. **Rust Toolchain**: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+2. **Python Development Files**:
+   - Ubuntu/Debian: `sudo apt-get install python3-dev python3.11-dev`
+   - macOS: `brew install python@3.11`
+3. **Maturin** (recommended): `pip install maturin`
+
+### Building from Source
 
 ```bash
-# Install Rust and Python development tools
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-pip install maturin numpy pandas
+# Clone the repository
+git clone https://github.com/EthanNOV56/so-dev.git
+cd so-dev
 
-# Clone and build
-git clone https://github.com/tip/statoxide.git
-cd statoxide
-maturin develop --release  # For development
+# Build Python bindings with maturin
+cd crates/so-python
+maturin develop  # Editable install for development
 # or
-maturin build --release && pip install target/wheels/*.whl
+maturin build --release  # Build wheel for distribution
 ```
 
-## API Design
+### Direct Cargo Build
 
-### Python API (R-inspired)
-
-```python
-# Formula interface (like R/statsmodels)
-so.ols("y ~ x1 + x2 + x1:x2", data)
-so.glm("y ~ x1 + x2", data, family="binomial")
-so.mixed("y ~ x1 + (1 | group)", data)
-
-# Data structures
-df = so.DataFrame.from_dict({...})
-series = so.Series("x", [1, 2, 3, 4, 5])
-formula = so.Formula("y ~ log(x1) + sqrt(x2)")
-
-# Results with comprehensive statistics
-results.params      # coefficients
-results.bse         # standard errors
-results.tvalues     # t-statistics
-results.pvalues     # p-values
-results.rsquared    # R-squared
-results.aic         # AIC
-results.bic         # BIC
-results.predict(X)  # predictions
+```bash
+cd /path/to/statoxide
+export PYO3_PYTHON=python3.11
+cargo build --release --package so-python
 ```
 
-### Rust API (Chainable)
+The shared library will be at `target/release/libso_python.so`.
 
-```rust
-use statoxide::prelude::*;
+## 🧪 Testing
 
-let data = DataFrame::from_series(...)?;
-let results = LinearModelBuilder::formula(&formula, &data)
-    .ridge(0.5)
-    .fit()?;
-
-println!("R-squared: {:.3}", results.r_squared);
-println!("Coefficients: {:?}", results.coefficients);
+### Rust Tests
+```bash
+cargo test --all
 ```
 
-## Performance
-
-StatOxide provides significant performance benefits:
-
-| Operation | StatOxide (Rust) | statsmodels (Python) | Speedup |
-|-----------|------------------|----------------------|---------|
-| OLS (n=100k, p=10) | 12ms | 150ms | 12.5x |
-| Ridge regression | 8ms | 120ms | 15x |
-| GLM (logistic) | 25ms | 300ms | 12x |
-| ARIMA fitting | 45ms | 500ms | 11x |
-
-Benchmarks run on Intel i7-1185G7, 32GB RAM.
-
-## Interoperability
-
-### With NumPy
-
-```python
-import numpy as np
-import statoxide as so
-
-# From numpy arrays
-X = np.random.randn(100, 5)
-y = np.random.randn(100)
-results = so.ols_from_matrix(X, y)
-
-# To numpy arrays
-coef = np.array(results.params)
+### Python Tests
+After installation:
+```bash
+python -c "import statoxide; print(statoxide.version())"
+python crates/so-python/test_api.py  # API demonstration
 ```
 
-### With Pandas
+## 📚 Documentation
 
-```python
-import pandas as pd
-import statoxide as so
+- **API Reference**: Run `cargo doc --all --no-deps --open` for Rust documentation
+- **Python Docstrings**: All Python functions include detailed docstrings
+- **Examples**: See `crates/so-python/test_api.py` for usage examples
 
-# From pandas DataFrame
-df_pd = pd.DataFrame({"y": y, "x1": x1, "x2": x2})
-df_so = so.DataFrame.from_pandas(df_pd)  # zero-copy where possible
+## 🎯 Design Principles
 
-# To pandas DataFrame
-results_df = pd.DataFrame({
-    "coef": results.params,
-    "std_err": results.bse,
-    "t_value": results.tvalues,
-    "p_value": results.pvalues,
-})
-```
+1. **Performance**: Leverage Rust's zero-cost abstractions and LLVM optimizations
+2. **Safety**: Memory safety guarantees without garbage collection
+3. **Interoperability**: Seamless Python integration with minimal overhead
+4. **Modularity**: Independent crates for clear separation of concerns
+5. **API Consistency**: Familiar interfaces inspired by R, pandas, and statsmodels
 
-### With scikit-learn
+## 🔧 Development Status
 
-```python
-from sklearn.datasets import make_regression
-from sklearn.model_selection import train_test_split
-import statoxide as so
+| Module | Status | Notes |
+|--------|--------|-------|
+| **so-core** | ✅ Complete | Data structures, formula parsing |
+| **so-linalg** | ✅ Complete | Linear algebra abstraction |
+| **so-stats** | ✅ Complete | Statistical functions & distributions |
+| **so-models** | ✅ Complete | Regression, GLM, mixed effects, robust, nonparametric |
+| **so-tsa** | ✅ Complete | ARIMA, GARCH, decomposition, forecasting |
+| **so-utils** | ✅ Complete | Random generation, validation, numerical methods |
+| **so-python** | ✅ **Complete** | **Full Python bindings implemented** |
 
-X, y = make_regression(n_samples=1000, n_features=10)
-X_train, X_test, y_train, y_test = train_test_split(X, y)
+## 📄 License
 
-# Use StatOxide for model fitting
-results = so.ols_from_matrix(X_train, y_train)
+MIT OR Apache-2.0 - see [LICENSE](LICENSE) file for details.
 
-# Use scikit-learn for evaluation
-from sklearn.metrics import mean_squared_error
-y_pred = results.predict(X_test)
-mse = mean_squared_error(y_test, y_pred)
-```
+## 🙏 Acknowledgments
 
-## Roadmap
+- **R** and **statsmodels** for statistical API inspiration
+- **pandas** for DataFrame design patterns
+- **PyO3** team for excellent Rust-Python interop
+- **ndarray** and **faer** for numerical computing foundations
 
-### Phase 1 (Current)
-- [x] Formula parser (R-style)
-- [x] DataFrame/Series data structures
-- [x] OLS regression with inference
-- [x] Ridge regression
-- [x] Python bindings
+## 🤝 Contributing
 
-### Phase 2 (Next)
-- [ ] Lasso and Elastic Net
-- [ ] Generalized Linear Models (GLM)
-- [ ] Time series models (ARIMA, GARCH)
-- [ ] Mixed effects models
-- [ ] Comprehensive test suite
-
-### Phase 3
-- [ ] Survival analysis (Cox model)
-- [ ] Nonparametric regression
-- [ ] Bayesian methods
-- [ ] Distributed computing support
-- [ ] GPU acceleration
-
-## Documentation
-
-Full documentation available at: https://statoxide.org
-
-- [API Reference](https://statoxide.org/api)
-- [Examples](https://statoxide.org/examples)
-- [Performance Guide](https://statoxide.org/performance)
-- [Migration from statsmodels](https://statoxide.org/migration)
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Contributions are welcome!
 
 1. Fork the repository
 2. Create a feature branch
-3. Add tests for your changes
-4. Ensure code passes `cargo test` and `cargo fmt`
+3. Make your changes
+4. Run tests: `cargo test --all`
 5. Submit a pull request
 
-## License
+## 📞 Support
 
-Dual-licensed under MIT or Apache 2.0 at your option.
+- **Issues**: [GitHub Issues](https://github.com/EthanNOV56/so-dev/issues)
+- **Repository**: [GitHub Repository](https://github.com/EthanNOV56/so-dev)
 
-## Citation
+---
 
-If you use StatOxide in your research, please cite:
-
-```bibtex
-@software{statoxide2025,
-  title = {StatOxide: A High-Performance Statistical Modeling Library},
-  author = {Tip and Contributors},
-  year = {2025},
-  url = {https://github.com/tip/statoxide},
-}
-```
-
-## Community
-
-- [GitHub Issues](https://github.com/tip/statoxide/issues) - Bug reports and feature requests
-- [Discussions](https://github.com/tip/statoxide/discussions) - Questions and community help
-- [Discord](https://discord.gg/statoxide) - Real-time chat
+<p align="center">
+  <em>High-performance statistics meets Python productivity</em>
+</p>

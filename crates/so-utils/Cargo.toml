@@ -1,0 +1,19 @@
+[package]
+name = "so-utils"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+
+[dependencies]
+ndarray.workspace = true
+rand.workspace = true
+thiserror.workspace = true
+so-core = { path = "../so-core" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
