@@ -262,11 +262,11 @@ class GLM:
         ...
     
     @staticmethod
-    def new() -> 'GLM':
-        """Create a new GLM instance."""
+    def new() -> 'GLMBuilder':
+        """Create a new GLM builder."""
         ...
     
-    def fit(self, formula: Formula, data: DataFrame) -> 'GLMResults':
+    def fit(self, formula: str, data: DataFrame) -> 'GLMResults':
         """Fit model using formula and data."""
         ...
     
@@ -306,6 +306,16 @@ class GLMResults:
     @property
     def pearson_residuals(self) -> List[float]:
         """Pearson residuals."""
+        ...
+    
+    @property
+    def residuals(self) -> List[float]:
+        """Raw residuals (response scale)."""
+        ...
+    
+    @property
+    def hat_matrix_diag(self) -> List[float]:
+        """Diagonal of hat matrix (leverage values)."""
         ...
     
     @property

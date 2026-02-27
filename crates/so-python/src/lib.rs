@@ -556,6 +556,18 @@ impl PyGLMResults {
         self.inner.pearson_residuals.to_vec()
     }
     
+    /// Get raw residuals (response scale)
+    #[getter]
+    fn residuals(&self) -> Vec<f64> {
+        self.inner.residuals.to_vec()
+    }
+    
+    /// Get diagonal of hat matrix (leverage values)
+    #[getter]
+    fn hat_matrix_diag(&self) -> Vec<f64> {
+        self.inner.hat_matrix_diag.to_vec()
+    }
+    
     /// Get number of iterations
     #[getter]
     fn iterations(&self) -> usize {
