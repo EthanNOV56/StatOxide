@@ -16,6 +16,19 @@ use so_tsa::TimeSeries;
 use so_tsa::arima::ARIMAResults;
 use so_tsa::garch::GARCHResults;
 
+// Import statistical tests
+use so_stats::tests::{
+    t_test_one_sample as t_test_one_sample_rs,
+    t_test_two_sample as t_test_two_sample_rs,
+    t_test_paired as t_test_paired_rs,
+    chi_square_goodness_of_fit as chi_square_goodness_of_fit_rs,
+    chi_square_test_independence as chi_square_test_independence_rs,
+    f_test_variances as f_test_variances_rs,
+    anova_one_way as anova_one_way_rs,
+    shapiro_wilk_test as shapiro_wilk_test_rs,
+    Alternative, TestResult
+};
+
 /// Python wrapper for StatOxide Series
 #[pyclass(name = "Series")]
 struct PySeries {
@@ -1083,6 +1096,13 @@ fn statoxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
     stats_module.add_function(wrap_pyfunction!(std_dev, &stats_module)?)?;
     stats_module.add_function(wrap_pyfunction!(correlation, &stats_module)?)?;
     stats_module.add_function(wrap_pyfunction!(descriptive_summary, &stats_module)?)?;
+    // Statistical tests
+    stats_module.add_function(wrap_pyfunction!(t_test_one_sample, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(t_test_two_sample, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(t_test_paired, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(chi_square_test_independence, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(anova_one_way, &stats_module)?)?;
+    stats_module.add_function(wrap_pyfunction!(shapiro_wilk_test, &stats_module)?)?;
     m.add_submodule(&stats_module)?;
     
     // Models module
@@ -1197,6 +1217,109 @@ fn descriptive_summary(py: Python, data: Vec<f64>) -> PyResult<Py<PyDict>> {
     }
     
     Ok(dict.into())
+}
+
+/// Convert alternative hypothesis string to Rust enum
+fn parse_alternative(alternative: &str) -> PyResult<Alternative> {
+    match alternative.to_lowercase().as_str() {
+        "two-sided" | "two_sided" | "two.sided" => Ok(Alternative::TwoSided),
+        "less" | "smaller" => Ok(Alternative::Less),
+        "greater" | "larger" => Ok(Alternative::Greater),
+        _ => Err(PyValueError::new_err(
+            "alternative must be 'two-sided', 'less', or 'greater'"
+        )),
+    }
+}
+
+/// Convert TestResult to Python dictionary
+fn test_result_to_dict(py: Python, result: &TestResult) -> PyResult<Py<PyDict>> {
+    let dict = PyDict::new(py);
+    dict.set_item("statistic", result.statistic)?;
+    dict.set_item("p_value", result.p_value)?;
+    dict.set_item("df", result.df)?;
+    dict.set_item("alternative", match result.alternative {
+        Alternative::TwoSided => "two-sided",
+        Alternative::Less => "less",
+        Alternative::Greater => "greater",
+    })?;
+    dict.set_item("null_value", result.null_value)?;
+    Ok(dict.into())
+}
+
+/// One-sample t-test
+#[pyfunction]
+fn t_test_one_sample(py: Python, data: Vec<f64>, mu: f64, alternative: String) -> PyResult<Py<PyDict>> {
+    let data_array = ndarray::Array1::from_vec(data);
+    let alt = parse_alternative(&alternative)?;
+    let result = t_test_one_sample_rs(&data_array, mu, alt)
+        .map_err(|e| PyRuntimeError::new_err(format!("t-test failed: {:?}", e)))?;
+    test_result_to_dict(py, &result)
+}
+
+/// Two-sample t-test (independent samples, equal variance assumed)
+#[pyfunction]
+fn t_test_two_sample(py: Python, x: Vec<f64>, y: Vec<f64>, alternative: String) -> PyResult<Py<PyDict>> {
+    let x_array = ndarray::Array1::from_vec(x);
+    let y_array = ndarray::Array1::from_vec(y);
+    let alt = parse_alternative(&alternative)?;
+    let result = t_test_two_sample_rs(&x_array, &y_array, alt)
+        .map_err(|e| PyRuntimeError::new_err(format!("t-test failed: {:?}", e)))?;
+    test_result_to_dict(py, &result)
+}
+
+/// Paired t-test
+#[pyfunction]
+fn t_test_paired(py: Python, x: Vec<f64>, y: Vec<f64>, alternative: String) -> PyResult<Py<PyDict>> {
+    let x_array = ndarray::Array1::from_vec(x);
+    let y_array = ndarray::Array1::from_vec(y);
+    let alt = parse_alternative(&alternative)?;
+    let result = t_test_paired_rs(&x_array, &y_array, alt)
+        .map_err(|e| PyRuntimeError::new_err(format!("paired t-test failed: {:?}", e)))?;
+    test_result_to_dict(py, &result)
+}
+
+/// Chi-square test of independence
+#[pyfunction]
+fn chi_square_test_independence(py: Python, observed: Vec<Vec<f64>>) -> PyResult<Py<PyDict>> {
+    // Convert to ndarray matrix
+    let n_rows = observed.len();
+    if n_rows == 0 {
+        return Err(PyValueError::new_err("observed must have at least one row"));
+    }
+    let n_cols = observed[0].len();
+    let mut flat = Vec::new();
+    for row in observed {
+        if row.len() != n_cols {
+            return Err(PyValueError::new_err("All rows must have same length"));
+        }
+        flat.extend(row);
+    }
+    let matrix = ndarray::Array2::from_shape_vec((n_rows, n_cols), flat)
+        .map_err(|e| PyValueError::new_err(format!("Failed to create matrix: {}", e)))?;
+    
+    let result = chi_square_test_independence_rs(&matrix)
+        .map_err(|e| PyRuntimeError::new_err(format!("chi-square test failed: {:?}", e)))?;
+    test_result_to_dict(py, &result)
+}
+
+/// One-way ANOVA
+#[pyfunction]
+fn anova_one_way(py: Python, groups: Vec<Vec<f64>>) -> PyResult<Py<PyDict>> {
+    let arrays: Vec<_> = groups.into_iter()
+        .map(|g| ndarray::Array1::from_vec(g))
+        .collect();
+    let result = anova_one_way_rs(&arrays)
+        .map_err(|e| PyRuntimeError::new_err(format!("ANOVA failed: {:?}", e)))?;
+    test_result_to_dict(py, &result)
+}
+
+/// Shapiro-Wilk test for normality
+#[pyfunction]
+fn shapiro_wilk_test(py: Python, data: Vec<f64>) -> PyResult<Py<PyDict>> {
+    let data_array = ndarray::Array1::from_vec(data);
+    let result = shapiro_wilk_test_rs(&data_array)
+        .map_err(|e| PyRuntimeError::new_err(format!("Shapiro-Wilk test failed: {:?}", e)))?;
+    test_result_to_dict(py, &result)
 }
 
 /// Fit linear regression model

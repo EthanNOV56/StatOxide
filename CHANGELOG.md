@@ -13,12 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `GLM` (Generalized Linear Models) with `Family`, `Link`, `GLMBuilder`, `GLMResults`
   - `TimeSeries`, `ARIMA`, `GARCH` time series analysis models
   - Statistical functions: `mean()`, `std_dev()`, `correlation()`, `descriptive_summary()`
+  - **Statistical tests**: `t_test_one_sample()`, `t_test_two_sample()`, `t_test_paired()`, 
+    `chi_square_test_independence()`, `anova_one_way()`, `shapiro_wilk_test()`
   - Utility functions: `train_test_split()`, `version()`
 - **Type stubs** (`statoxide.pyi`) for IDE autocompletion and type checking
 - **Flexible input types** for ARIMA/GARCH `fit()` methods (accepts `TimeSeries`, `list[float]`, `PyList`, etc.)
 - **R-style formula parser** with design matrix construction
 - **Mixed effects models** framework (LMM/GLMM) with EM algorithm
 - **GARCH models** with normal and t-distributions
+- **Statistical tests implementation** in `so-stats` crate:
+  - One-sample, two-sample, and paired t-tests
+  - Chi-square test of independence
+  - One-way ANOVA
+  - Shapiro-Wilk normality test
 - **Comprehensive test suite** with mock-free API validation
 
 ### Changed
