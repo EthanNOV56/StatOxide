@@ -114,7 +114,7 @@ pub mod utils {
 }
 
 // Placeholder modules (to be implemented)
-pub mod mixed {}
+pub mod mixed;
 pub mod stats {}
 
 // ============================================================================

@@ -60,7 +60,7 @@ impl Frequency {
             Frequency::Hourly => "Hourly",
             Frequency::Minutely => "Minutely",
             Frequency::Secondly => "Secondly",
-            Frequency::Custom(n) => "Custom",
+            Frequency::Custom(_n) => "Custom",
             Frequency::Irregular => "Irregular",
         }
     }
@@ -396,7 +396,7 @@ impl TimeSeries {
                 let mut i = 0;
                 while i < filled.len() {
                     if filled[i].is_nan() {
-                        let mut start = i;
+                        let start = i;
                         while i < filled.len() && filled[i].is_nan() {
                             i += 1;
                         }

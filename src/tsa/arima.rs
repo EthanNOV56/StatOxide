@@ -135,7 +135,7 @@ impl ARIMABuilder {
     }
     
     /// Set seasonal components (SARIMA)
-    pub fn seasonal(mut self, P: usize, D: usize, Q: usize, period: usize) -> SARIMABuilder {
+    pub fn seasonal(self, P: usize, D: usize, Q: usize, period: usize) -> SARIMABuilder {
         SARIMABuilder::new(self.config.order.p, self.config.order.d, self.config.order.q)
             .seasonal(P, D, Q, period)
     }

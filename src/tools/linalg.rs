@@ -1,4 +1,5 @@
 //! Linear algebra utilities using faer
+#![allow(non_snake_case)]
 
 use ndarray::{Array1, Array2};
 use faer::{Mat, Faer, prelude::{Solver, SolverCore}};

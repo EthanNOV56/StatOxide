@@ -157,26 +157,28 @@ pub fn standardize(data: &Array2<f64>, axis: usize) -> Result<Array2<f64>> {
 }
 
 /// Add intercept column (column of ones) to design matrix
+#[allow(non_snake_case)]
 pub fn add_intercept(X: &Array2<f64>) -> Array2<f64> {
     let (n_samples, n_features) = X.dim();
-    let mut X_with_intercept = Array2::zeros((n_samples, n_features + 1));
+    let mut x_with_intercept = Array2::zeros((n_samples, n_features + 1));
     
     // First column is intercept (ones)
     for i in 0..n_samples {
-        X_with_intercept[(i, 0)] = 1.0;
+        x_with_intercept[(i, 0)] = 1.0;
     }
     
     // Copy original features
     for i in 0..n_samples {
         for j in 0..n_features {
-            X_with_intercept[(i, j + 1)] = X[(i, j)];
+            x_with_intercept[(i, j + 1)] = X[(i, j)];
         }
     }
     
-    X_with_intercept
+    x_with_intercept
 }
 
 /// Remove intercept column from design matrix
+#[allow(non_snake_case)]
 pub fn remove_intercept(X: &Array2<f64>) -> Result<Array2<f64>> {
     let (n_samples, n_features) = X.dim();
     
@@ -197,18 +199,19 @@ pub fn remove_intercept(X: &Array2<f64>) -> Result<Array2<f64>> {
         ));
     }
     
-    let mut X_without_intercept = Array2::zeros((n_samples, n_features - 1));
+    let mut x_without_intercept = Array2::zeros((n_samples, n_features - 1));
     
     for i in 0..n_samples {
         for j in 1..n_features {
-            X_without_intercept[(i, j - 1)] = X[(i, j)];
+            x_without_intercept[(i, j - 1)] = X[(i, j)];
         }
     }
     
-    Ok(X_without_intercept)
+    Ok(x_without_intercept)
 }
 
 /// Compute the hat matrix (projection matrix) for linear regression
+#[allow(non_snake_case)]
 pub fn hat_matrix(X: &Array2<f64>) -> Result<Array2<f64>> {
     let (n_samples, n_features) = X.dim();
     
@@ -229,6 +232,7 @@ pub fn hat_matrix(X: &Array2<f64>) -> Result<Array2<f64>> {
 }
 
 /// Compute leverage values (diagonal of hat matrix)
+#[allow(non_snake_case)]
 pub fn leverage_values(X: &Array2<f64>) -> Result<Array1<f64>> {
     let h = hat_matrix(X)?;
     let n_samples = X.dim().0;
@@ -253,11 +257,15 @@ pub fn winsorize(data: &Array1<f64>, lower_percentile: f64, upper_percentile: f6
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
     
     let n = sorted.len();
-    let lower_idx = (n as f64 * lower_percentile / 100.0).floor() as usize;
-    let upper_idx = (n as f64 * upper_percentile / 100.0).ceil() as usize - 1;
     
-    let lower_bound = sorted[lower_idx];
-    let upper_bound = sorted[upper_idx];
+    // Compute percentiles using floor method (matching test expectations)
+    let compute_percentile = |p: f64| -> f64 {
+        let idx = ((n - 1) as f64 * p / 100.0).floor() as usize;
+        sorted[idx]
+    };
+    
+    let lower_bound = compute_percentile(lower_percentile);
+    let upper_bound = compute_percentile(upper_percentile);
     
     let winsorized: Array1<f64> = data.iter()
         .map(|&x| {
@@ -333,6 +341,7 @@ pub fn mahalanobis_distance(data: &Array2<f64>) -> Result<Array1<f64>> {
 }
 
 /// Compute Cook's distance for linear regression diagnostics
+#[allow(non_snake_case)]
 pub fn cooks_distance(X: &Array2<f64>, y: &Array1<f64>, coefficients: &Array1<f64>) -> Result<Array1<f64>> {
     let n_samples = X.dim().0;
     let p = coefficients.len();
@@ -396,7 +405,7 @@ mod tests {
         for j in 0..2 {
             let col = standardized.column(j);
             let mean = col.mean().unwrap();
-            let std = col.std(1.0).unwrap();
+            let std = col.std(1.0);
             
             assert_abs_diff_eq!(mean, 0.0, epsilon = 1e-10);
             assert_abs_diff_eq!(std, 1.0, epsilon = 1e-10);
