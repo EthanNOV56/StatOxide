@@ -1938,23 +1938,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "so-core"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87fc258393c5427a9e98251eb762aeab8d7067c331955051e87ec02612dca83d"
-dependencies = [
- "anyhow",
- "faer",
- "indexmap",
- "ndarray",
- "nom",
- "rand 0.9.2",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
-]
-
-[[package]]
 name = "so-linalg"
 version = "0.2.0"
 dependencies = [
@@ -1975,7 +1958,7 @@ dependencies = [
  "rand_distr 0.4.3",
  "serde",
  "serde_json",
- "so-core 0.2.0",
+ "so-core",
  "so-linalg",
  "so-stats",
  "statrs",
@@ -1988,7 +1971,7 @@ version = "0.2.0"
 dependencies = [
  "ndarray",
  "pyo3",
- "so-core 0.2.0",
+ "so-core",
  "so-linalg",
  "so-models",
  "so-stats",
@@ -2003,7 +1986,7 @@ dependencies = [
  "approx",
  "ndarray",
  "rand 0.9.2",
- "so-core 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "so-core",
  "statrs",
  "thiserror 2.0.17",
 ]
@@ -2017,7 +2000,7 @@ dependencies = [
  "ndarray",
  "rand 0.9.2",
  "serde",
- "so-core 0.2.0",
+ "so-core",
  "so-linalg",
  "so-stats",
  "statrs",
@@ -2030,7 +2013,7 @@ dependencies = [
  "ndarray",
  "rand 0.9.2",
  "serde",
- "so-core 0.2.0",
+ "so-core",
  "thiserror 2.0.17",
 ]
 
