@@ -13,9 +13,8 @@ classifiers = [
 ]
 description = "High-performance statistical computing library written in Rust"
 readme = "../../README.md"
-license = "MIT OR Apache-2.0"
+license = "MIT AND Apache-2.0"
 keywords = ["statistics", "regression", "machine-learning", "data-science"]
 authors = [
     {name = "EthanNov56", email = "yichen_1226@163.com"},
-    {name = "tip", email = "tip@example.com"}
 ]
