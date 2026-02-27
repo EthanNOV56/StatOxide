@@ -6,6 +6,8 @@
 //! - Lasso Regression (L1 regularization)
 //! - Elastic Net (L1 + L2 regularization)
 
+#![allow(non_snake_case)]  // Allow mathematical notation (X, y, etc.)
+
 use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use so_core::data::DataFrame;

@@ -28,6 +28,8 @@
 //! // Forecast next 10 periods
 //! let forecast = arima.forecast(10);
 //!
+
+#![allow(non_snake_case)]  // Allow mathematical notation (X, y, σ, ε, etc.)
 //! // Fit GARCH(1,1) model
 //! let garch = GARCH::new(1, 1)
 //!     .distribution(Distribution::Normal)

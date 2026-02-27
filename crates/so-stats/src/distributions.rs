@@ -3,6 +3,8 @@
 //! Provides common probability distributions with PDF, CDF, quantile functions,
 //! and random number generation.
 
+#![allow(non_snake_case)]  // Allow mathematical notation (N, K, etc.)
+
 use rand::Rng;
 use rand::seq::SliceRandom;
 use statrs::distribution::{

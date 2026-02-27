@@ -28,6 +28,8 @@
 //! - `faer` (default): Uses the faer library for high-performance linear algebra
 //! - `ndarray-linalg`: Uses ndarray-linalg with OpenBLAS/LAPACK
 //! - `pure-rust`: Pure Rust implementation (slower but no external dependencies)
+
+#![allow(non_snake_case)]  // Allow mathematical notation (A, B, D, etc.)
 //!
 //! # Advanced Usage
 //!
