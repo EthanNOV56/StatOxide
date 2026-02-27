@@ -10,6 +10,8 @@ use so_core::formula::Formula;
 // Import models
 use so_models::glm::{Family, GLM as RustGLM, GLMModelBuilder, GLMResults, Link};
 use so_models::regression::OLS;
+use so_models::robust::{LeastTrimmedSquares, MEstimator as RustMEstimator, RobustRegressionResults as RustRobustResults, LossFunction, ScaleEstimator};
+use so_models::nonparametric::{Kernel, KernelRegression, KernelRegressionResults, LocalRegression, LocalRegressionResults, SmoothingSpline, SmoothingSplineResults, BandwidthMethod};
 
 // Import time series
 use so_tsa::TimeSeries;
@@ -1200,6 +1202,15 @@ fn statoxide(m: &Bound<'_, PyModule>) -> PyResult<()> {
     models_module.add_class::<PyGLMBuilder>()?;
     models_module.add_class::<PyGLM>()?;
     models_module.add_class::<PyGLMResults>()?;
+    // Robust regression classes
+    models_module.add_class::<PyMEstimator>()?;
+    models_module.add_class::<PyRobustRegressionResults>()?;
+    models_module.add_class::<PyLeastTrimmedSquares>()?;
+    // Nonparametric regression classes
+    models_module.add_class::<PyKernelRegression>()?;
+    models_module.add_class::<PyKernelRegressionResults>()?;
+    models_module.add_class::<PyLocalRegression>()?;
+    models_module.add_class::<PyLocalRegressionResults>()?;
     m.add_submodule(&models_module)?;
 
     // TSA module
@@ -1579,8 +1590,473 @@ fn train_test_split(data: Vec<f64>, test_size: f64) -> PyResult<(Vec<f64>, Vec<f
     Ok((train, test))
 }
 
+// ============================================================================
+// Robust Regression
+// ============================================================================
+
+/// Python wrapper for robust M-estimator
+#[pyclass(name = "MEstimator")]
+struct PyMEstimator {
+    inner: Option<RustMEstimator>,
+}
+
+#[pymethods]
+impl PyMEstimator {
+    /// Create a new Huber M-estimator (k=1.345 gives 95% efficiency)
+    #[staticmethod]
+    fn huber(k: f64) -> Self {
+        PyMEstimator {
+            inner: Some(RustMEstimator::huber(k)),
+        }
+    }
+
+    /// Create a new Tukey's biweight M-estimator (c=4.685 gives 95% efficiency)
+    #[staticmethod]
+    fn tukey(c: f64) -> Self {
+        PyMEstimator {
+            inner: Some(RustMEstimator::tukey(c)),
+        }
+    }
+
+    /// Set maximum iterations
+    fn max_iterations(&mut self, max_iter: usize) -> PyResult<()> {
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.max_iterations(max_iter));
+        }
+        Ok(())
+    }
+
+    /// Set convergence tolerance
+    fn tolerance(&mut self, tol: f64) -> PyResult<()> {
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.tolerance(tol));
+        }
+        Ok(())
+    }
+
+    /// Fit robust regression to data
+    fn fit(&mut self, X: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<PyRobustRegressionResults> {
+        if X.is_empty() || X[0].is_empty() {
+            return Err(PyValueError::new_err("X must be non-empty"));
+        }
+        
+        if X.len() != y.len() {
+            return Err(PyValueError::new_err(
+                "X and y must have the same number of rows",
+            ));
+        }
+
+        // Convert to ndarray
+        let n_rows = X.len();
+        let n_cols = X[0].len();
+        let mut X_array = ndarray::Array2::zeros((n_rows, n_cols));
+        
+        for i in 0..n_rows {
+            if X[i].len() != n_cols {
+                return Err(PyValueError::new_err(
+                    "All rows of X must have the same length",
+                ));
+            }
+            for j in 0..n_cols {
+                X_array[[i, j]] = X[i][j];
+            }
+        }
+        
+        let y_array = ndarray::Array1::from_vec(y);
+
+        if let Some(inner) = self.inner.take() {
+            match inner.fit(&X_array, &y_array) {
+                Ok(results) => Ok(PyRobustRegressionResults { inner: results }),
+                Err(e) => Err(PyRuntimeError::new_err(format!(
+                    "Robust regression failed: {:?}",
+                    e
+                ))),
+            }
+        } else {
+            Err(PyRuntimeError::new_err("MEstimator not available"))
+        }
+    }
+}
+
+/// Python wrapper for robust regression results
+#[pyclass(name = "RobustRegressionResults")]
+struct PyRobustRegressionResults {
+    inner: RustRobustResults,
+}
+
+#[pymethods]
+impl PyRobustRegressionResults {
+    /// Get robust coefficients
+    #[getter]
+    fn coefficients(&self) -> Vec<f64> {
+        self.inner.coefficients.to_vec()
+    }
+
+    /// Get robust standard errors
+    #[getter]
+    fn standard_errors(&self) -> Vec<f64> {
+        self.inner.standard_errors.to_vec()
+    }
+
+    /// Get robust scale estimate
+    #[getter]
+    fn scale(&self) -> f64 {
+        self.inner.scale
+    }
+
+    /// Get number of iterations
+    #[getter]
+    fn iterations(&self) -> usize {
+        self.inner.iterations
+    }
+
+    /// Get weights (can identify outliers)
+    #[getter]
+    fn weights(&self) -> Vec<f64> {
+        self.inner.weights.to_vec()
+    }
+
+    /// Get breakdown point
+    #[getter]
+    fn breakdown_point(&self) -> f64 {
+        self.inner.breakdown_point
+    }
+
+    /// Get efficiency relative to OLS
+    #[getter]
+    fn efficiency(&self) -> f64 {
+        self.inner.efficiency
+    }
+
+    /// Get summary as dictionary
+    fn summary(&self) -> PyResult<Py<PyDict>> {
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            
+            dict.set_item("coefficients", self.coefficients())?;
+            dict.set_item("standard_errors", self.standard_errors())?;
+            dict.set_item("scale", self.scale())?;
+            dict.set_item("iterations", self.iterations())?;
+            dict.set_item("breakdown_point", self.breakdown_point())?;
+            dict.set_item("efficiency", self.efficiency())?;
+            
+            // Compute t-values
+            let coefficients = &self.inner.coefficients;
+            let standard_errors = &self.inner.standard_errors;
+            let mut t_values = Vec::new();
+            
+            for i in 0..coefficients.len() {
+                if standard_errors[i] > 0.0 {
+                    let t = coefficients[i] / standard_errors[i];
+                    t_values.push(t);
+                } else {
+                    t_values.push(f64::NAN);
+                }
+            }
+            
+            dict.set_item("t_values", t_values)?;
+            // Note: p-values require t-distribution CDF, omitted for simplicity
+            // Users can compute p-values using scipy.stats if needed
+            
+            Ok(dict.into())
+        })
+    }
+}
+
+/// Python wrapper for Least Trimmed Squares (high breakdown)
+#[pyclass(name = "LeastTrimmedSquares")]
+struct PyLeastTrimmedSquares {
+    inner: Option<LeastTrimmedSquares>,
+}
+
+#[pymethods]
+impl PyLeastTrimmedSquares {
+    /// Create a new LTS estimator (coverage=0.5)
+    #[new]
+    fn new(coverage: Option<f64>) -> Self {
+        PyLeastTrimmedSquares {
+            inner: Some(LeastTrimmedSquares::new(coverage.unwrap_or(0.5))),
+        }
+    }
+
+    /// Fit LTS regression
+    fn fit(&mut self, X: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<PyRobustRegressionResults> {
+        if X.is_empty() || X[0].is_empty() {
+            return Err(PyValueError::new_err("X must be non-empty"));
+        }
+        
+        if X.len() != y.len() {
+            return Err(PyValueError::new_err(
+                "X and y must have the same number of rows",
+            ));
+        }
+
+        let n_rows = X.len();
+        let n_cols = X[0].len();
+        let mut X_array = ndarray::Array2::zeros((n_rows, n_cols));
+        
+        for i in 0..n_rows {
+            if X[i].len() != n_cols {
+                return Err(PyValueError::new_err(
+                    "All rows of X must have the same length",
+                ));
+            }
+            for j in 0..n_cols {
+                X_array[[i, j]] = X[i][j];
+            }
+        }
+        
+        let y_array = ndarray::Array1::from_vec(y);
+
+        if let Some(inner) = self.inner.take() {
+            match inner.fit(&X_array, &y_array) {
+                Ok(results) => Ok(PyRobustRegressionResults { inner: results }),
+                Err(e) => Err(PyRuntimeError::new_err(format!(
+                    "LTS regression failed: {:?}",
+                    e
+                ))),
+            }
+        } else {
+            Err(PyRuntimeError::new_err("LTS estimator not available"))
+        }
+    }
+}
+
+// ============================================================================
+// Nonparametric Methods
+// ============================================================================
+
+/// Python wrapper for kernel regression
+#[pyclass(name = "KernelRegression")]
+struct PyKernelRegression {
+    inner: Option<KernelRegression>,
+}
+
+#[pymethods]
+impl PyKernelRegression {
+    /// Create a new kernel regression with Gaussian kernel
+    #[new]
+    fn new() -> Self {
+        PyKernelRegression {
+            inner: Some(KernelRegression::new()),
+        }
+    }
+
+    /// Set kernel type
+    fn kernel(&mut self, kernel: &str) -> PyResult<()> {
+        let kernel_enum = match kernel.to_lowercase().as_str() {
+            "gaussian" => Kernel::Gaussian,
+            "epanechnikov" => Kernel::Epanechnikov,
+            "uniform" => Kernel::Uniform,
+            "triangular" => Kernel::Triangular,
+            "biweight" => Kernel::Biweight,
+            "triweight" => Kernel::Triweight,
+            "cosine" => Kernel::Cosine,
+            _ => return Err(PyValueError::new_err(
+                format!("Unknown kernel: {}. Valid options: gaussian, epanechnikov, uniform, triangular, biweight, triweight, cosine", kernel)
+            )),
+        };
+
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.kernel(kernel_enum));
+        }
+        Ok(())
+    }
+
+    /// Set bandwidth directly
+    fn bandwidth(&mut self, bandwidth: f64) -> PyResult<()> {
+        if bandwidth <= 0.0 {
+            return Err(PyValueError::new_err("Bandwidth must be positive"));
+        }
+        
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.bandwidth(bandwidth));
+        }
+        Ok(())
+    }
+
+    /// Fit kernel regression model
+    fn fit(&mut self, x: Vec<f64>, y: Vec<f64>) -> PyResult<PyKernelRegressionResults> {
+        if x.len() != y.len() {
+            return Err(PyValueError::new_err("x and y must have the same length"));
+        }
+        
+        if x.len() < 3 {
+            return Err(PyValueError::new_err("Need at least 3 observations for kernel regression"));
+        }
+
+        let x_array = Array1::from_vec(x);
+        let y_array = Array1::from_vec(y);
+
+        if let Some(inner) = self.inner.take() {
+            match inner.fit(&x_array, &y_array) {
+                Ok(results) => Ok(PyKernelRegressionResults { inner: results }),
+                Err(e) => Err(PyRuntimeError::new_err(format!(
+                    "Kernel regression failed: {:?}",
+                    e
+                ))),
+            }
+        } else {
+            Err(PyRuntimeError::new_err("KernelRegression not available"))
+        }
+    }
+}
+
+/// Python wrapper for kernel regression results
+#[pyclass(name = "KernelRegressionResults")]
+struct PyKernelRegressionResults {
+    inner: KernelRegressionResults,
+}
+
+#[pymethods]
+impl PyKernelRegressionResults {
+    /// Get fitted values
+    #[getter]
+    fn fitted_values(&self) -> Vec<f64> {
+        self.inner.fitted_values.to_vec()
+    }
+
+    /// Get evaluation points (sorted x values)
+    #[getter]
+    fn evaluation_points(&self) -> Vec<f64> {
+        self.inner.evaluation_points.to_vec()
+    }
+
+    /// Get bandwidth used
+    #[getter]
+    fn bandwidth(&self) -> f64 {
+        self.inner.bandwidth
+    }
+
+    /// Get effective degrees of freedom
+    #[getter]
+    fn df(&self) -> f64 {
+        self.inner.df
+    }
+
+    /// Get residual sum of squares
+    #[getter]
+    fn rss(&self) -> f64 {
+        self.inner.rss
+    }
+}
+
+/// Python wrapper for local regression (LOESS)
+#[pyclass(name = "LocalRegression")]
+struct PyLocalRegression {
+    inner: Option<LocalRegression>,
+}
+
+#[pymethods]
+impl PyLocalRegression {
+    /// Create a new local regression
+    #[new]
+    fn new() -> Self {
+        PyLocalRegression {
+            inner: Some(LocalRegression::new()),
+        }
+    }
+
+    /// Set polynomial degree (0, 1, or 2)
+    fn degree(&mut self, degree: usize) -> PyResult<()> {
+        if degree > 2 {
+            return Err(PyValueError::new_err("Degree must be 0, 1, or 2"));
+        }
+        
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.degree(degree));
+        }
+        Ok(())
+    }
+
+    /// Set span (proportion of data used locally, 0.1 to 1.0)
+    fn span(&mut self, span: f64) -> PyResult<()> {
+        if span < 0.1 || span > 1.0 {
+            return Err(PyValueError::new_err("Span must be between 0.1 and 1.0"));
+        }
+        
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.span(span));
+        }
+        Ok(())
+    }
+
+    /// Enable robust fitting
+    fn robust(&mut self, robust: bool) -> PyResult<()> {
+        if let Some(inner) = self.inner.take() {
+            self.inner = Some(inner.robust(robust));
+        }
+        Ok(())
+    }
+
+    /// Fit local regression model
+    fn fit(&mut self, x: Vec<f64>, y: Vec<f64>) -> PyResult<PyLocalRegressionResults> {
+        if x.len() != y.len() {
+            return Err(PyValueError::new_err("x and y must have the same length"));
+        }
+        
+        if x.len() < 3 {
+            return Err(PyValueError::new_err("Need at least 3 observations for local regression"));
+        }
+
+        let x_array = Array1::from_vec(x);
+        let y_array = Array1::from_vec(y);
+
+        if let Some(inner) = self.inner.take() {
+            match inner.fit(&x_array, &y_array) {
+                Ok(results) => Ok(PyLocalRegressionResults { inner: results }),
+                Err(e) => Err(PyRuntimeError::new_err(format!(
+                    "Local regression failed: {:?}",
+                    e
+                ))),
+            }
+        } else {
+            Err(PyRuntimeError::new_err("LocalRegression not available"))
+        }
+    }
+}
+
+/// Python wrapper for local regression results
+#[pyclass(name = "LocalRegressionResults")]
+struct PyLocalRegressionResults {
+    inner: LocalRegressionResults,
+}
+
+#[pymethods]
+impl PyLocalRegressionResults {
+    /// Get fitted values
+    #[getter]
+    fn fitted_values(&self) -> Vec<f64> {
+        self.inner.fitted_values.to_vec()
+    }
+
+    /// Get evaluation points (sorted x values)
+    #[getter]
+    fn evaluation_points(&self) -> Vec<f64> {
+        self.inner.evaluation_points.to_vec()
+    }
+
+    /// Get polynomial degree used
+    #[getter]
+    fn degree(&self) -> usize {
+        self.inner.degree
+    }
+
+    /// Get span used
+    #[getter]
+    fn span(&self) -> f64 {
+        self.inner.span
+    }
+
+    /// Get residual sum of squares
+    #[getter]
+    fn rss(&self) -> f64 {
+        self.inner.rss
+    }
+}
+
 /// Get library version
 #[pyfunction]
 fn version() -> PyResult<String> {
-    Ok("0.2.0".to_string())
+    Ok("0.3.0".to_string())
 }

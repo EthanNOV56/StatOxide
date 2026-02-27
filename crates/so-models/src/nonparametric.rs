@@ -586,6 +586,8 @@ pub struct SmoothingSplineResults {
     pub df: f64,
     /// Generalized cross-validation score
     pub gcv: f64,
+    /// Residual sum of squares
+    pub rss: f64,
 }
 
 /// Natural cubic smoothing splines
@@ -725,6 +727,7 @@ impl SmoothingSpline {
             lambda,
             df,
             gcv,
+            rss,
         })
     }
 
@@ -790,5 +793,228 @@ impl SmoothingSpline {
     ) -> Result<f64> {
         // Simplified implementation
         Ok(1.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::Array1;
+
+    #[test]
+    fn test_kernel_functions() {
+        let gaussian = Kernel::Gaussian;
+        let epanechnikov = Kernel::Epanechnikov;
+        let uniform = Kernel::Uniform;
+        let triangular = Kernel::Triangular;
+        let biweight = Kernel::Biweight;
+        let triweight = Kernel::Triweight;
+        let cosine = Kernel::Cosine;
+
+        // Test at center
+        assert!(gaussian.evaluate(0.0) > 0.0);
+        assert!(epanechnikov.evaluate(0.0) > 0.0);
+        assert!(uniform.evaluate(0.0) > 0.0);
+        assert!(triangular.evaluate(0.0) > 0.0);
+        assert!(biweight.evaluate(0.0) > 0.0);
+        assert!(triweight.evaluate(0.0) > 0.0);
+        assert!(cosine.evaluate(0.0) > 0.0);
+
+        // Test at boundary (u=1)
+        assert!(epanechnikov.evaluate(1.0) == 0.0);
+        assert!(uniform.evaluate(1.0) == 0.5); // Uniform includes boundary
+        assert!(triangular.evaluate(1.0).abs() < 1e-10);
+        assert!(biweight.evaluate(1.0).abs() < 1e-10);
+        assert!(triweight.evaluate(1.0).abs() < 1e-10);
+        assert!(cosine.evaluate(1.0).abs() < 1e-10);
+
+        // Test outside support (u=2)
+        assert!(epanechnikov.evaluate(2.0) == 0.0);
+        assert!(uniform.evaluate(2.0) == 0.0);
+        assert!(triangular.evaluate(2.0) == 0.0);
+        assert!(biweight.evaluate(2.0) == 0.0);
+        assert!(triweight.evaluate(2.0) == 0.0);
+        assert!(cosine.evaluate(2.0) == 0.0);
+    }
+
+    #[test]
+    fn test_kernel_regression_basic() {
+        // Simple linear data
+        let x = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        let kr = KernelRegression::new()
+            .kernel(Kernel::Gaussian)
+            .bandwidth(1.0);
+
+        let result = kr.fit(&x, &y);
+        assert!(result.is_ok());
+        let results = result.unwrap();
+
+        assert_eq!(results.fitted_values.len(), 5);
+        assert_eq!(results.evaluation_points.len(), 5);
+        assert!(results.bandwidth > 0.0);
+        assert!(results.df > 0.0);
+        assert!(results.rss >= 0.0);
+
+        // Fitted values should be close to actual values
+        for i in 0..5 {
+            let diff = (results.fitted_values[i] - y[i]).abs();
+            assert!(diff < 1.0); // Should be reasonably close
+        }
+    }
+
+    #[test]
+    fn test_kernel_regression_insufficient_data() {
+        let x = Array1::from_vec(vec![1.0, 2.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0]);
+
+        let kr = KernelRegression::new();
+        let result = kr.fit(&x, &y);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_local_regression_basic() {
+        // Simple linear data
+        let x = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        let loess = LocalRegression::new()
+            .degree(1)
+            .span(0.8);
+
+        let result = loess.fit(&x, &y);
+        assert!(result.is_ok());
+        let results = result.unwrap();
+
+        assert_eq!(results.fitted_values.len(), 5);
+        assert_eq!(results.evaluation_points.len(), 5);
+        assert_eq!(results.degree, 1);
+        assert!(results.span > 0.0);
+        assert!(results.rss >= 0.0);
+
+        // Fitted values should be close to actual values
+        for i in 0..5 {
+            let diff = (results.fitted_values[i] - y[i]).abs();
+            assert!(diff < 1.0);
+        }
+    }
+
+    #[test]
+    fn test_local_regression_robust() {
+        // Data with outlier
+        let x = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0, 40.0, 5.0]); // 4th point is outlier
+
+        let loess_standard = LocalRegression::new()
+            .degree(1)
+            .span(0.8)
+            .robust(false);
+
+        let loess_robust = LocalRegression::new()
+            .degree(1)
+            .span(0.8)
+            .robust(true)
+            .iterations(3);
+
+        let result_std = loess_standard.fit(&x, &y);
+        let result_rob = loess_robust.fit(&x, &y);
+
+        assert!(result_std.is_ok());
+        assert!(result_rob.is_ok());
+
+        let results_std = result_std.unwrap();
+        let results_rob = result_rob.unwrap();
+
+        // Robust fit should have lower RSS (less affected by outlier)
+        // In this simple case, both might be similar, but just check they run
+        assert!(results_std.rss >= 0.0);
+        assert!(results_rob.rss >= 0.0);
+    }
+
+    #[test]
+    fn test_smoothing_spline_basic() {
+        // Simple linear data
+        let x = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        let spline = SmoothingSpline::new()
+            .lambda(1.0)
+            .n_knots(3);
+
+        let result = spline.fit(&x, &y);
+        assert!(result.is_ok());
+        let results = result.unwrap();
+
+        assert_eq!(results.fitted_values.len(), 5);
+        assert_eq!(results.knots.len(), 3);
+        assert!(results.coefficients.len() > 0);
+        assert!(results.lambda > 0.0);
+        assert!(results.df > 0.0);
+        assert!(results.gcv >= 0.0);
+
+        // Fitted values should be reasonably close
+        for i in 0..5 {
+            let diff = (results.fitted_values[i] - y[i]).abs();
+            assert!(diff < 2.0);
+        }
+    }
+
+    #[test]
+    fn test_smoothing_spline_different_lambda() {
+        let x = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        let spline_smooth = SmoothingSpline::new().lambda(10.0); // More smoothing
+        let spline_fit = SmoothingSpline::new().lambda(0.1); // Less smoothing
+
+        let result_smooth = spline_smooth.fit(&x, &y);
+        let result_fit = spline_fit.fit(&x, &y);
+
+        assert!(result_smooth.is_ok());
+        assert!(result_fit.is_ok());
+
+        let smooth = result_smooth.unwrap();
+        let fit = result_fit.unwrap();
+
+        // More smoothing should give simpler fit (potentially higher RSS)
+        // But both should complete successfully
+        assert!(smooth.rss >= 0.0);
+        assert!(fit.rss >= 0.0);
+    }
+
+    #[test]
+    fn test_bandwidth_selection() {
+        let x = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        // Test different bandwidth methods
+        let kr_silverman = KernelRegression::new()
+            .bandwidth_method(BandwidthMethod::Silverman);
+
+        let kr_scott = KernelRegression::new()
+            .bandwidth_method(BandwidthMethod::Scott);
+
+        let kr_fixed = KernelRegression::new()
+            .bandwidth_method(BandwidthMethod::Fixed(1.0));
+
+        let result_silverman = kr_silverman.fit(&x, &y);
+        let result_scott = kr_scott.fit(&x, &y);
+        let result_fixed = kr_fixed.fit(&x, &y);
+
+        assert!(result_silverman.is_ok());
+        assert!(result_scott.is_ok());
+        assert!(result_fixed.is_ok());
+
+        let silverman = result_silverman.unwrap();
+        let scott = result_scott.unwrap();
+        let fixed = result_fixed.unwrap();
+
+        // Different methods should produce different bandwidths
+        assert!(silverman.bandwidth > 0.0);
+        assert!(scott.bandwidth > 0.0);
+        assert_eq!(fixed.bandwidth, 1.0);
     }
 }

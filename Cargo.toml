@@ -4,7 +4,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 authors = ["EthanNov56 <yichen_1226@163.com>"]
 description = "High-performance statistical computing library written in Rust, exposed to Python via PyO3"

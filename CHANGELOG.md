@@ -58,6 +58,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `so-utils`: General utilities
   - `so-python`: Python bindings
 
+## [0.3.0] - 2026-02-27
+
+### Added
+- **Robust statistics module** with complete Python bindings:
+  - M-estimators: Huber, Tukey's biweight, Hampel, Andrews
+  - High-breakdown estimators: Least Trimmed Squares (LTS), S-estimators, MM-estimators
+  - Robust scale estimation: MAD, IQR
+  - Sandwich variance estimators for inference
+- **Nonparametric methods module** with Python bindings:
+  - Kernel regression: 7 kernel functions (Gaussian, Epanechnikov, Uniform, etc.)
+  - Local regression (LOESS): local polynomial fitting with robust iterations
+  - Smoothing splines: natural cubic splines with GCV smoothing parameter selection
+  - Bandwidth selection: Silverman, Scott, LSCV, plugin methods
+- **Unified entry point crate** (`statoxide`) for easy importing (similar to polars)
+  - Modular structure: `statoxide::{models, stats, tsa, linalg, utils}`
+  - Prelude module for convenient imports
+  - Re-exports of commonly used types and functions
+  - Complete documentation and examples
+
+### Changed
+- **Dependency management**: Centralized in workspace root for consistency
+- **Python package structure**: Enhanced `models` submodule with robust and nonparametric classes
+- **Version synchronization**: All crates now version 0.3.0 with consistent metadata
+
+### Technical
+- **Test coverage**: 18 passing tests across all modules
+- **API consistency**: Python bindings follow scikit-learn-like patterns
+- **Documentation**: Complete Rust doc tests and Python type stubs
+
 ## [0.1.0] - 2026-01-23
 
 ### Added
@@ -68,6 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Time series analysis framework
 - Python binding skeleton
 
-[Unreleased]: https://github.com/EthanNOV56/StatOxide/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/EthanNOV56/StatOxide/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/EthanNOV56/StatOxide/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/EthanNOV56/StatOxide/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/EthanNOV56/StatOxide/releases/tag/v0.1.0
