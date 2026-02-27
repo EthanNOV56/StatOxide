@@ -1,5 +1,7 @@
 //! Random number generation utilities
 
+#![allow(non_snake_case)]  // Allow mathematical notation (A, D, etc.)
+
 use ndarray::{Array1, Array2};
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
