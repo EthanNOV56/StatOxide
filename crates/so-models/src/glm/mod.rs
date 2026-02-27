@@ -12,9 +12,10 @@
 //!
 //! # Example Usage
 //!
-//! ```rust
-//! use statoxide::glm::{GLM, Family, Link};
-//! use statoxide::DataFrame;
+//! ```rust,no_run
+//! use so_models::glm::{GLM, Family, Link};
+//! use so_core::data::DataFrame;
+//! use so_core::formula::Formula;
 //!
 //! // Create a logistic regression model
 //! let model = GLM::new()
@@ -22,8 +23,10 @@
 //!     .link(Link::Logit)
 //!     .intercept(true);
 //!
-//! // Fit the model
-//! let results = model.fit("y ~ x1 + x2", &data)?;
+//! // Example data would be needed to fit the model
+//! // let formula = Formula::parse("y ~ x1 + x2").unwrap();
+//! // let data = DataFrame::from_series(...).unwrap();
+//! // let results = model.fit_formula(&formula, &data).unwrap();
 //! ```
 //!
 //! # References

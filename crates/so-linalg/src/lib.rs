@@ -34,7 +34,12 @@
 //! For more control, you can use backends directly:
 //! ```rust
 //! use so_linalg::backend::{LinalgBackend, FaerBackend};
+//! use ndarray::{arr1, arr2};
 //!
+//! // Create example matrices
+//! let A = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
+//! let b = arr1(&[5.0, 6.0]);
+//! 
 //! let backend = FaerBackend::default();
 //! let result = backend.solve(&A, &b);
 //! ```
