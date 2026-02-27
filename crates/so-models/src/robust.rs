@@ -12,14 +12,15 @@
 //! 5. **Robust covariance estimation**: Minimum Covariance Determinant (MCD)
 //!
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2};
+#![allow(non_snake_case)]  // Allow mathematical notation (X, W, etc.)
+
+use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{ContinuousCDF, Normal};
 
-use so_core::data::{DataFrame, Series};
 use so_core::error::{Result, Error};
 use so_linalg::{solve, inv};
-use so_stats::{mean, std, median};
+use so_stats::median;
 
 /// Loss functions for M-estimation
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -334,7 +335,7 @@ impl MEstimator {
     /// Update scale estimate based on residuals and weights
     fn update_scale(&self, residuals: &Array1<f64>, weights: &Array1<f64>) -> f64 {
         // Weighted scale estimate
-        let n = residuals.len();
+        let _n = residuals.len();
         let sum_weights: f64 = weights.iter().sum();
         let weighted_sse: f64 = residuals.iter().zip(weights.iter())
             .map(|(&r, &w)| r * r * w)
@@ -397,7 +398,7 @@ impl MEstimator {
             let psi = self.loss.psi(scaled_residuals[i]);
             let xi = X.row(i);
             let outer = xi.t().dot(&xi).to_owned() * psi * psi;
-            sandwich = sandwich + outer;
+            sandwich += outer;
         }
         
         let cov = XtWX_inv.dot(&sandwich.dot(&XtWX_inv)) * scale * scale / n as f64;
@@ -417,9 +418,9 @@ impl MEstimator {
             }
             LossFunction::Tukey { c } => {
                 // Approximation for Tukey's efficiency
-                let c2 = c * c;
-                let eff = if c >= 4.0 { 0.95 } else { 0.85 };
-                eff
+                let _c2 = c * c;
+                
+                if c >= 4.0 { 0.95 } else { 0.85 }
             }
             _ => 0.85, // Conservative estimate for other loss functions
         }

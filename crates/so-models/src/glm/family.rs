@@ -1,5 +1,7 @@
 //! Distribution families for Generalized Linear Models
 
+#![allow(non_snake_case)]  // Allow mathematical notation
+
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{Normal, Continuous};
@@ -111,7 +113,7 @@ impl Family {
             Family::Binomial => {
                 // Check that values are in [0, 1]
                 for &val in y {
-                    if val < 0.0 || val > 1.0 {
+                    if !(0.0..=1.0).contains(&val) {
                         return Err(so_core::error::Error::DataError(
                             format!("Binomial response must be in [0, 1], got {}", val)
                         ));

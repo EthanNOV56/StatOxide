@@ -10,18 +10,18 @@
 //! - Special functions: `y ~ log(x1) + sqrt(x2)`
 //! - Random effects (for mixed models): `y ~ (1 | group)`
 
-use std::collections::{HashMap, HashSet};
-use ndarray::{Array1, Array2, arr2};
+use std::collections::HashSet;
+use ndarray::{Array1, Array2};
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, alphanumeric1, char, digit1, multispace0, space0},
-    combinator::{map, opt, recognize},
-    multi::{many0, many1, separated_list1},
-    sequence::{delimited, pair, preceded, terminated, tuple},
+    character::complete::{alpha1, alphanumeric1, char, digit1, space0},
+    combinator::{map, recognize},
+    multi::{many0, separated_list1},
+    sequence::{delimited, pair, tuple},
     IResult,
 };
-use super::data::{DataFrame, Series};
+use super::data::DataFrame;
 
 // ============================================================================
 // Formula AST

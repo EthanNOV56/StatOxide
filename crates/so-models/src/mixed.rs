@@ -25,11 +25,12 @@
 //! 4. **Laplace Approximation**: For non-Gaussian GLMM
 //!
 
+#![allow(non_snake_case)]  // Allow mathematical notation (X, Z, V, etc.)
+
 use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
-use statrs::distribution::{ContinuousCDF, Normal};
 
-use so_core::data::{DataFrame, Series};
+use so_core::data::DataFrame;
 use so_core::error::{Result, Error};
 use so_linalg::{solve, inv};
 
@@ -353,7 +354,7 @@ impl LinearMixedModelBuilder {
     }
     
     /// Compute V^{-1} using Woodbury identity (simplified)
-    fn compute_V_inv(&self, Z: &Array2<f64>, sigma2_e: f64, sigma2_u: &[f64], group_sizes: &[usize]) -> Result<Array2<f64>> {
+    fn compute_V_inv(&self, Z: &Array2<f64>, sigma2_e: f64, _sigma2_u: &[f64], _group_sizes: &[usize]) -> Result<Array2<f64>> {
         let n = Z.nrows();
         let mut V_inv = Array2::zeros((n, n));
         
@@ -369,7 +370,7 @@ impl LinearMixedModelBuilder {
     /// Compute log-likelihood
     fn compute_log_lik(&self, y: &Array1<f64>, X: &Array2<f64>, V: &Array2<f64>, beta: Array1<f64>, method: EstimationMethod) -> f64 {
         let n = y.len() as f64;
-        let p = X.ncols() as f64;
+        let _p = X.ncols() as f64;
         
         // Compute residuals
         let residuals = y - X.dot(&beta);

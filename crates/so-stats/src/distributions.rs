@@ -7,7 +7,7 @@ use rand::Rng;
 use rand::seq::SliceRandom;
 use statrs::distribution::{
     Beta, Cauchy, ChiSquared, Continuous, ContinuousCDF, Discrete, DiscreteCDF,
-    FisherSnedecor, Gamma, Laplace, LogNormal, Normal, StudentsT, Triangular, Uniform, Weibull,
+    FisherSnedecor, Gamma, LogNormal, Normal, StudentsT, Weibull,
 };
 use statrs::distribution::{Bernoulli, Binomial, Geometric, Hypergeometric, NegativeBinomial, Poisson};
 use statrs::function::gamma::gamma;

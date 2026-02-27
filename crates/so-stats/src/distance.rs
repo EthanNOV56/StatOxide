@@ -1,7 +1,6 @@
 //! Statistical distances and divergences
 
 use ndarray::{Array1, Array2};
-use so_core::error::{Error, Result};
 
 /// Compute Euclidean distance between two vectors
 pub fn euclidean_distance(x: &Array1<f64>, y: &Array1<f64>) -> Option<f64> {

@@ -64,8 +64,8 @@ impl GLMResults {
         let mut summary = String::new();
         
         // Header
-        summary.push_str(&format!("Generalized Linear Model Results\n"));
-        summary.push_str(&format!("================================\n"));
+        summary.push_str("Generalized Linear Model Results\n");
+        summary.push_str("================================\n");
         summary.push_str(&format!("Family: {} ({})\n", 
             self.family.name(), self.link.name()));
         summary.push_str(&format!("Link: {}\n", self.link.name()));
@@ -75,7 +75,7 @@ impl GLMResults {
         summary.push_str(&format!("Scale (dispersion): {:.4}\n", self.scale));
         
         // Deviance table
-        summary.push_str(&format!("\nDeviance Residuals:\n"));
+        summary.push_str("\nDeviance Residuals:\n");
         summary.push_str(&format!("    Null deviance: {:.4} on {} df\n",
             self.null_deviance, self.df_null));
         summary.push_str(&format!("Residual deviance: {:.4} on {} df\n",
@@ -93,7 +93,7 @@ impl GLMResults {
             self.converged, self.iterations));
         
         // Coefficients table
-        summary.push_str(&format!("\nCoefficients:\n"));
+        summary.push_str("\nCoefficients:\n");
         summary.push_str(&format!("{:>20} {:>10} {:>10} {:>10} {:>10}\n",
             " ", "Estimate", "Std. Error", "z value", "Pr(>|z|)"));
         summary.push_str(&format!("{}\n", "-".repeat(60)));
@@ -129,15 +129,14 @@ impl GLMResults {
         }
         
         summary.push_str(&format!("{}\n", "-".repeat(60)));
-        summary.push_str(&format!("Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n"));
+        summary.push_str("Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n");
         
         // Dispersion information
-        if self.family == Family::Poisson || self.family == Family::Binomial {
-            if (self.scale - 1.0).abs() > 0.1 {
+        if (self.family == Family::Poisson || self.family == Family::Binomial)
+            && (self.scale - 1.0).abs() > 0.1 {
                 summary.push_str(&format!("\nWarning: Dispersion parameter is {:.3}, not 1.\n", self.scale));
                 summary.push_str(&format!("Consider using quasi-{} family.\n", self.family.name().to_lowercase()));
             }
-        }
         
         summary
     }

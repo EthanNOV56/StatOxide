@@ -86,7 +86,7 @@ impl LinalgBackend for FaerBackend {
     }
     
     fn inv(&self, A: &Array2<f64>) -> Result<Array2<f64>> {
-        use faer::{Mat, linalg::solvers::DenseSolveCore, prelude::Solve};
+        use faer::{Mat, linalg::solvers::DenseSolveCore};
         
         let n = A.nrows();
         let m = A.ncols();

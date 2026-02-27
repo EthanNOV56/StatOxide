@@ -1,7 +1,6 @@
 //! Correlation measures and related statistics
 
-use ndarray::{Array1, Array2};
-use so_core::error::{Error, Result};
+use ndarray::Array1;
 
 /// Compute Pearson correlation coefficient between two arrays
 pub fn pearson_correlation(x: &Array1<f64>, y: &Array1<f64>) -> Option<f64> {

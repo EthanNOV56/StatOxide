@@ -22,6 +22,8 @@
 //! 2. **Student's t**: zₜ ∼ t(ν) with ν degrees of freedom
 //! 3. **Generalized Error Distribution (GED)**: Flexible tail behavior
 
+#![allow(non_snake_case)]  // Allow mathematical notation (σ, ε, etc.)
+
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 use statrs::function::gamma;
@@ -363,7 +365,7 @@ impl GARCH {
         let order = self.config.order;
         
         // Extract parameters
-        let (omega, arch_coef, garch_coef, df) = self.extract_parameters(params);
+        let (omega, arch_coef, garch_coef, _df) = self.extract_parameters(params);
         
         // Calculate conditional variances
         let conditional_variances = self.calculate_variances(residuals, omega, &arch_coef, &garch_coef);

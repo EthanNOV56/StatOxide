@@ -12,13 +12,14 @@
 //! 5. **Nonparametric Tests**: Kolmogorov-Smirnov, Mann-Whitney U
 //!
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, stack, Axis};
+#![allow(non_snake_case)]  // Allow mathematical notation (X, W, etc.)
+
+use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 
-use so_core::data::{DataFrame, Series};
 use so_core::error::{Result, Error};
-use so_linalg::{solve, matmul};
-use so_stats::{mean, std, median, quantile, iqr};
+use so_linalg::solve;
+use so_stats::{mean, std, median};
 
 /// Kernel functions for nonparametric estimation
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -702,7 +703,7 @@ impl SmoothingSpline {
         // Simplified: use trace of hat matrix
         let p = basis.shape()[1];
         let df = p as f64;  // placeholder
-        let S = Array2::<f64>::eye(basis.shape()[0]);  // placeholder identity matrix
+        let _S = Array2::<f64>::eye(basis.shape()[0]);  // placeholder identity matrix
         
         // Compute GCV score
         let residuals = &y_sorted - &fitted;

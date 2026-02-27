@@ -58,11 +58,11 @@ impl LinearRegressionResults {
     /// Create a summary string similar to R's summary()
     pub fn summary(&self, feature_names: &[String]) -> String {
         let n_coef = self.coefficients.len();
-        let intercept_included = feature_names.get(0).map_or(false, |n| n == "(Intercept)");
+        let intercept_included = feature_names.first().is_some_and(|n| n == "(Intercept)");
         
         let mut summary = String::new();
-        summary.push_str(&format!("Linear Regression Results\n"));
-        summary.push_str(&format!("========================\n"));
+        summary.push_str("Linear Regression Results\n");
+        summary.push_str("========================\n");
         summary.push_str(&format!("R-squared: {:.4}, Adjusted R-squared: {:.4}\n", 
             self.r_squared, self.r_squared_adj));
         summary.push_str(&format!("F-statistic: {:.2}, p-value: {:.4e}\n",
@@ -454,7 +454,7 @@ impl Ridge {
         
         // Unstandardize other coefficients
         for j in 1..p {
-            coefficients[j] = coefficients[j] / x_std[j];
+            coefficients[j] /= x_std[j];
         }
         
         coefficients

@@ -47,7 +47,7 @@ impl Series {
     }
 
     /// Get data as array view
-    pub fn data(&self) -> ArrayView1<f64> {
+    pub fn data(&self) -> ArrayView1<'_, f64> {
         self.data.view()
     }
 

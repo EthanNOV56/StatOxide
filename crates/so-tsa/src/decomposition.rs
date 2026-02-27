@@ -256,7 +256,7 @@ impl MovingAverageDecomposition {
         let mut seasonal = Array1::zeros(n);
         
         // Calculate seasonal indices for each period position
-        let n_seasons = (n + period - 1) / period;
+        let _n_seasons = (n + period - 1) / period;
         let mut seasonal_sums = vec![0.0; period];
         let mut seasonal_counts = vec![0; period];
         

@@ -23,6 +23,8 @@
 //! 2. **Maximum Likelihood (ML)**: More accurate, uses Kalman filter
 //! 3. **Exact Maximum Likelihood**: Uses state space representation
 
+#![allow(non_snake_case)]  // Allow mathematical notation (X, y, etc.)
+
 use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 use super::timeseries::TimeSeries;
@@ -135,7 +137,7 @@ impl ARIMABuilder {
     }
     
     /// Set seasonal components (SARIMA)
-    pub fn seasonal(mut self, P: usize, D: usize, Q: usize, period: usize) -> SARIMABuilder {
+    pub fn seasonal(self, P: usize, D: usize, Q: usize, period: usize) -> SARIMABuilder {
         SARIMABuilder::new(self.config.order.p, self.config.order.d, self.config.order.q)
             .seasonal(P, D, Q, period)
     }

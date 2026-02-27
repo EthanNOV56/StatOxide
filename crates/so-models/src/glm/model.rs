@@ -1,5 +1,7 @@
 //! Generalized Linear Model implementation using IRLS (Iteratively Reweighted Least Squares)
 
+#![allow(non_snake_case)]  // Allow mathematical notation (X, W, etc.)
+
 use ndarray::{Array1, Array2};
 use so_linalg;
 use statrs::distribution::{Normal, ContinuousCDF};
