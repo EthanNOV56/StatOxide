@@ -10,4 +10,17 @@ readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[lib]
+name = "statoxide"
+crate-type = ["rlib", "cdylib", "staticlib"]
+
 [dependencies]
+so-core = { workspace = true }
+so-linalg = { workspace = true }
+so-models = { workspace = true }
+so-stats = { workspace = true }
+so-tsa = { workspace = true }
+so-utils = { workspace = true }
+
+# Re-export common dependencies for convenience
+ndarray = { workspace = true }

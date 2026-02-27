@@ -2033,6 +2033,15 @@ dependencies = [
 [[package]]
 name = "statoxide"
 version = "0.2.2"
+dependencies = [
+ "ndarray",
+ "so-core",
+ "so-linalg",
+ "so-models",
+ "so-stats",
+ "so-tsa",
+ "so-utils",
+]
 
 [[package]]
 name = "statrs"
