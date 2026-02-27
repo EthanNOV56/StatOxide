@@ -13,27 +13,28 @@
 //!
 //! # Example Usage
 //!
-//! ```rust
-//! use so_tsa::{TimeSeries, ARIMA, GARCH};
-//! use so_core::DataFrame;
-//!
-//! // Load time series data
-//! let ts = TimeSeries::from_dataframe(&df, "value", "date")?;
-//!
-//! // Fit ARIMA(1,1,1) model
-//! let arima = ARIMA::new(1, 1, 1)
-//!     .seasonal(1, 1, 1, 12)  // seasonal ARIMA
-//!     .fit(&ts)?;
-//!
-//! // Forecast next 10 periods
-//! let forecast = arima.forecast(10);
-//!
-
-#![allow(non_snake_case)]  // Allow mathematical notation (X, y, σ, ε, etc.)
-//! // Fit GARCH(1,1) model
-//! let garch = GARCH::new(1, 1)
-//!     .distribution(Distribution::Normal)
-//!     .fit(&ts.residuals())?;
+//! ```rust,no_run
+//! use so_tsa::{TimeSeries, ARIMA, GARCH, GARCHDistribution};
+//! use ndarray::Array1;
+//! 
+//! // Create a simple time series with enough data for ARIMA
+//! let values = Array1::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]);
+//! let timestamps: Vec<i64> = (0..values.len() as i64).collect();
+//! let ts = TimeSeries::new("series", timestamps, values, None).unwrap();
+//! 
+//! // Fit ARIMA(0,0,0) model (white noise with constant)
+//! let arima = ARIMA::builder(0, 0, 0)
+//!     .with_constant(true)
+//!     .max_iter(200)
+//!     .tol(1e-4)
+//!     .fit(&ts).unwrap();
+//! 
+//! // Fit GARCH(1,1) model  
+//! let garch = GARCH::builder(1, 1)
+//!     .distribution(GARCHDistribution::Normal)
+//!     .max_iter(200)
+//!     .tol(1e-4)
+//!     .fit(&ts).unwrap();
 //! ```
 //!
 //! # References
@@ -42,6 +43,7 @@
 //! - Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and Practice*.
 //! - R's `forecast` package and statsmodels' `tsa` module.
 
+#![allow(non_snake_case)]
 #![warn(missing_docs)]
 
 pub mod timeseries;

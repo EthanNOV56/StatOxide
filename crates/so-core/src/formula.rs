@@ -22,6 +22,7 @@ use nom::{
     IResult,
 };
 use super::data::DataFrame;
+use crate::Series;
 
 // ============================================================================
 // Formula AST

@@ -1339,5 +1339,5 @@ fn train_test_split(data: Vec<f64>, test_size: f64) -> PyResult<(Vec<f64>, Vec<f
 /// Get library version
 #[pyfunction]
 fn version() -> PyResult<String> {
-    Ok("0.1.0".to_string())
+    Ok("0.2.0".to_string())
 }
