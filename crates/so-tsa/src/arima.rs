@@ -23,12 +23,12 @@
 //! 2. **Maximum Likelihood (ML)**: More accurate, uses Kalman filter
 //! 3. **Exact Maximum Likelihood**: Uses state space representation
 
-#![allow(non_snake_case)]  // Allow mathematical notation (X, y, etc.)
+#![allow(non_snake_case)] // Allow mathematical notation (X, y, etc.)
 
+use super::timeseries::TimeSeries;
 use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
-use super::timeseries::TimeSeries;
-use so_core::error::{Result, Error};
+use so_core::error::{Error, Result};
 use so_linalg;
 
 /// ARIMA model order
@@ -135,37 +135,41 @@ impl ARIMABuilder {
             },
         }
     }
-    
+
     /// Set seasonal components (SARIMA)
     pub fn seasonal(self, P: usize, D: usize, Q: usize, period: usize) -> SARIMABuilder {
-        SARIMABuilder::new(self.config.order.p, self.config.order.d, self.config.order.q)
-            .seasonal(P, D, Q, period)
+        SARIMABuilder::new(
+            self.config.order.p,
+            self.config.order.d,
+            self.config.order.q,
+        )
+        .seasonal(P, D, Q, period)
     }
-    
+
     /// Include constant term
     pub fn with_constant(mut self, include: bool) -> Self {
         self.config.with_constant = include;
         self
     }
-    
+
     /// Set estimation method
     pub fn method(mut self, method: EstimationMethod) -> Self {
         self.config.method = method;
         self
     }
-    
+
     /// Set maximum iterations
     pub fn max_iter(mut self, max_iter: usize) -> Self {
         self.config.max_iter = max_iter;
         self
     }
-    
+
     /// Set convergence tolerance
     pub fn tol(mut self, tol: f64) -> Self {
         self.config.tol = tol;
         self
     }
-    
+
     /// Fit ARIMA model
     pub fn fit(self, ts: &TimeSeries) -> Result<ARIMAResults> {
         let mut arima = ARIMA::new(self.config);
@@ -199,7 +203,7 @@ impl SARIMABuilder {
             tol: 1e-6,
         }
     }
-    
+
     /// Set seasonal components
     pub fn seasonal(mut self, P: usize, D: usize, Q: usize, period: usize) -> Self {
         self.order.seasonal_p = P;
@@ -208,37 +212,37 @@ impl SARIMABuilder {
         self.order.seasonal_period = period;
         self
     }
-    
+
     /// Include constant term
     pub fn with_constant(mut self, include: bool) -> Self {
         self.with_constant = include;
         self
     }
-    
+
     /// Set estimation method
     pub fn method(mut self, method: EstimationMethod) -> Self {
         self.method = method;
         self
     }
-    
+
     /// Set maximum iterations
     pub fn max_iter(mut self, max_iter: usize) -> Self {
         self.max_iter = max_iter;
         self
     }
-    
+
     /// Set convergence tolerance
     pub fn tol(mut self, tol: f64) -> Self {
         self.tol = tol;
         self
     }
-    
+
     /// Fit SARIMA model
     pub fn fit(self, ts: &TimeSeries) -> Result<ARIMAResults> {
         // Convert to equivalent ARIMA order
         let total_p = self.order.order.p + self.order.seasonal_p * self.order.seasonal_period;
         let total_q = self.order.order.q + self.order.seasonal_q * self.order.seasonal_period;
-        
+
         let mut arima = ARIMA::new(ARIMAConfig {
             order: ARIMAOrder {
                 p: total_p,
@@ -250,7 +254,7 @@ impl SARIMABuilder {
             max_iter: self.max_iter,
             tol: self.tol,
         });
-        
+
         arima.fit(ts)
     }
 }
@@ -265,97 +269,101 @@ impl ARIMA {
     pub fn new(config: ARIMAConfig) -> Self {
         Self { config }
     }
-    
+
     /// Create ARIMA builder
     pub fn builder(p: usize, d: usize, q: usize) -> ARIMABuilder {
         ARIMABuilder::new(p, d, q)
     }
-    
+
     /// Fit ARIMA model to time series
     pub fn fit(&mut self, ts: &TimeSeries) -> Result<ARIMAResults> {
         let n = ts.len();
         let order = self.config.order;
-        
+
         if n < order.p + order.q + 10 {
-            return Err(Error::DataError(
-                format!("Not enough observations for ARIMA({},{},{}), need at least {}, got {}",
-                    order.p, order.d, order.q, order.p + order.q + 10, n)
-            ));
+            return Err(Error::DataError(format!(
+                "Not enough observations for ARIMA({},{},{}), need at least {}, got {}",
+                order.p,
+                order.d,
+                order.q,
+                order.p + order.q + 10,
+                n
+            )));
         }
-        
+
         // Apply differencing if needed
         let (diffed_ts, _diff_timestamps) = self.difference(ts)?;
         let y = diffed_ts.values();
-        
+
         match self.config.method {
             EstimationMethod::CSS => self.fit_css(y, n),
             EstimationMethod::ML => self.fit_ml(y, n),
             EstimationMethod::ExactML => self.fit_exact_ml(y, n),
         }
     }
-    
+
     /// Apply differencing
     fn difference(&self, ts: &TimeSeries) -> Result<(TimeSeries, Vec<i64>)> {
         if self.config.order.d == 0 {
             return Ok((ts.clone(), ts.timestamps().to_vec()));
         }
-        
+
         let diffed = ts.diff(1, self.config.order.d)?;
         let timestamps = diffed.timestamps().to_vec();
         Ok((diffed, timestamps))
     }
-    
+
     /// Fit using Conditional Sum of Squares (CSS)
     fn fit_css(&self, y: &Array1<f64>, n_orig: usize) -> Result<ARIMAResults> {
         let order = self.config.order;
         let n = y.len();
-        
+
         // Prepare regression matrix for AR terms
         let mut X = Array2::zeros((n - order.p, order.p + order.q + 1));
         let mut y_reg = Array1::zeros(n - order.p);
-        
+
         let mut residuals = Array1::zeros(n);
         let mut fitted = Array1::zeros(n);
-        
+
         // Initial MA residuals (assume zero)
         for i in 0..n {
             residuals[i] = y[i];
         }
-        
+
         // Iterate to estimate AR and MA coefficients
         let mut converged = false;
         let mut iteration = 0;
-        
+
         // Variables to store coefficients (declared outside loop)
         let mut ar_coef = if order.p > 0 {
             Some(Array1::zeros(order.p))
         } else {
             None
         };
-        
+
         let mut ma_coef = if order.q > 0 {
             Some(Array1::zeros(order.q))
         } else {
             None
         };
-        
+
         let mut constant = if self.config.with_constant {
             Some(0.0)
         } else {
             None
         };
-        
+
         while iteration < self.config.max_iter && !converged {
             // Estimate AR coefficients using current residuals
             for t in order.p..n {
                 let mut row_idx = 0;
-                
+
                 // AR terms: y_{t-1}, ..., y_{t-p}
                 for lag in 1..=order.p {
                     X[(t - order.p, row_idx)] = y[t - lag];
                     row_idx += 1;
                 }
-                
+
                 // MA terms: ε_{t-1}, ..., ε_{t-q}
                 for lag in 1..=order.q {
                     if t - lag < residuals.len() {
@@ -363,48 +371,48 @@ impl ARIMA {
                     }
                     row_idx += 1;
                 }
-                
+
                 // Constant term
                 if self.config.with_constant {
                     X[(t - order.p, row_idx)] = 1.0;
                 }
-                
+
                 y_reg[t - order.p] = y[t];
             }
-            
+
             // Solve regression
             let XtX = X.t().dot(&X);
             let Xty = X.t().dot(&y_reg);
-            
+
             let coef = so_linalg::solve(&XtX, &Xty)
                 .map_err(|e| Error::LinearAlgebraError(format!("ARIMA CSS solve failed: {}", e)))?;
-            
+
             // Extract coefficients (update existing variables)
             let mut idx = 0;
-            
+
             if let Some(ref mut ar) = ar_coef {
                 for i in 0..order.p {
                     ar[i] = coef[idx];
                     idx += 1;
                 }
             }
-            
+
             if let Some(ref mut ma) = ma_coef {
                 for i in 0..order.q {
                     ma[i] = coef[idx];
                     idx += 1;
                 }
             }
-            
+
             if let Some(ref mut c) = constant {
                 *c = coef[idx];
             }
-            
+
             // Update residuals and fitted values
             let mut prev_change = 0.0;
             for t in 0..n {
                 let mut prediction = 0.0;
-                
+
                 // AR terms
                 if let Some(ref ar) = ar_coef {
                     for lag in 1..=order.p {
@@ -413,7 +421,7 @@ impl ARIMA {
                         }
                     }
                 }
-                
+
                 // MA terms
                 if let Some(ref ma) = ma_coef {
                     for lag in 1..=order.q {
@@ -422,42 +430,48 @@ impl ARIMA {
                         }
                     }
                 }
-                
+
                 // Constant
                 if let Some(c) = constant {
                     prediction += c;
                 }
-                
+
                 if t >= order.p {
                     fitted[t] = prediction;
                 }
-                
+
                 let new_residual = y[t] - prediction;
                 prev_change += (new_residual - residuals[t]).abs();
                 residuals[t] = new_residual;
             }
-            
+
             // Check convergence
             if prev_change / (n as f64) < self.config.tol {
                 converged = true;
             }
-            
+
             iteration += 1;
         }
-        
+
         if !converged {
-            return Err(Error::DataError(
-                format!("ARIMA CSS did not converge after {} iterations", self.config.max_iter)
-            ));
+            return Err(Error::DataError(format!(
+                "ARIMA CSS did not converge after {} iterations",
+                self.config.max_iter
+            )));
         }
-        
+
         // Calculate statistics
         let rss: f64 = residuals.iter().map(|&r| r.powi(2)).sum();
-        let sigma2 = rss / (n - order.p - order.q - if self.config.with_constant { 1 } else { 0 }) as f64;
-        
+        let sigma2 =
+            rss / (n - order.p - order.q - if self.config.with_constant { 1 } else { 0 }) as f64;
+
         let log_likelihood = self.calculate_log_likelihood(&residuals, sigma2, n);
-        let (aic, bic) = self.calculate_information_criteria(log_likelihood, order.p + order.q + if self.config.with_constant { 1 } else { 0 }, n_orig);
-        
+        let (aic, bic) = self.calculate_information_criteria(
+            log_likelihood,
+            order.p + order.q + if self.config.with_constant { 1 } else { 0 },
+            n_orig,
+        );
+
         Ok(ARIMAResults {
             ar_coef,
             ma_coef,
@@ -471,45 +485,45 @@ impl ARIMA {
             fitted,
         })
     }
-    
+
     /// Fit using Maximum Likelihood (simplified)
     fn fit_ml(&self, y: &Array1<f64>, n_orig: usize) -> Result<ARIMAResults> {
         // For now, use CSS as starting point and refine with ML
         self.fit_css(y, n_orig)
     }
-    
+
     /// Fit using Exact Maximum Likelihood
     fn fit_exact_ml(&self, y: &Array1<f64>, n_orig: usize) -> Result<ARIMAResults> {
         // Would use state space representation and Kalman filter
         // For now, fall back to ML
         self.fit_ml(y, n_orig)
     }
-    
+
     /// Calculate log-likelihood for Gaussian errors
     fn calculate_log_likelihood(&self, residuals: &Array1<f64>, sigma2: f64, n: usize) -> f64 {
-        -0.5 * n as f64 * (2.0 * std::f64::consts::PI * sigma2).ln() - 
-        0.5 * residuals.iter().map(|&r| r.powi(2)).sum::<f64>() / sigma2
+        -0.5 * n as f64 * (2.0 * std::f64::consts::PI * sigma2).ln()
+            - 0.5 * residuals.iter().map(|&r| r.powi(2)).sum::<f64>() / sigma2
     }
-    
+
     /// Calculate AIC and BIC
     fn calculate_information_criteria(&self, log_lik: f64, k: usize, n: usize) -> (f64, f64) {
         let aic = 2.0 * k as f64 - 2.0 * log_lik;
         let bic = (n as f64).ln() * k as f64 - 2.0 * log_lik;
         (aic, bic)
     }
-    
+
     /// Forecast future values
     pub fn forecast(&self, results: &ARIMAResults, steps: usize) -> Array1<f64> {
         let order = self.config.order;
         let n = results.residuals.len();
-        
+
         let mut forecasts = Array1::zeros(steps);
         let mut y_extended = results.fitted.clone();
         let mut residuals_extended = results.residuals.clone();
-        
+
         for h in 0..steps {
             let mut prediction = 0.0;
-            
+
             // AR terms
             if let Some(ref ar) = results.ar_coef {
                 for lag in 1..=order.p {
@@ -519,7 +533,7 @@ impl ARIMA {
                     }
                 }
             }
-            
+
             // MA terms
             if let Some(ref ma) = results.ma_coef {
                 for lag in 1..=order.q {
@@ -529,30 +543,32 @@ impl ARIMA {
                     }
                 }
             }
-            
+
             // Constant
             if let Some(c) = results.constant {
                 prediction += c;
             }
-            
+
             forecasts[h] = prediction;
-            
+
             // Extend arrays for next forecast
             y_extended = ndarray::concatenate(
                 ndarray::Axis(0),
-                &[y_extended.view(), ndarray::array![prediction].view()]
-            ).unwrap();
-            
+                &[y_extended.view(), ndarray::array![prediction].view()],
+            )
+            .unwrap();
+
             // For MA terms, we need future residuals (assume zero)
             residuals_extended = ndarray::concatenate(
                 ndarray::Axis(0),
-                &[residuals_extended.view(), ndarray::array![0.0].view()]
-            ).unwrap();
+                &[residuals_extended.view(), ndarray::array![0.0].view()],
+            )
+            .unwrap();
         }
-        
+
         forecasts
     }
-    
+
     /// Calculate prediction intervals
     pub fn prediction_intervals(
         &self,
@@ -563,10 +579,10 @@ impl ARIMA {
         let sigma = results.sigma2.sqrt();
         let _z = 1.0 - alpha / 2.0;
         let z_value = 1.96; // Approximate for 95% CI
-        
+
         let lower = forecasts.mapv(|f| f - z_value * sigma);
         let upper = forecasts.mapv(|f| f + z_value * sigma);
-        
+
         (lower, upper)
     }
 }

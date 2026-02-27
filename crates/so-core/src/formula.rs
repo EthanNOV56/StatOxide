@@ -10,18 +10,18 @@
 //! - Special functions: `y ~ log(x1) + sqrt(x2)`
 //! - Random effects (for mixed models): `y ~ (1 | group)`
 
-use std::collections::HashSet;
+use super::data::DataFrame;
 use ndarray::{Array1, Array2};
 use nom::{
+    IResult,
     branch::alt,
     bytes::complete::tag,
     character::complete::{alpha1, alphanumeric1, char, digit1, space0},
     combinator::{map, recognize},
     multi::{many0, separated_list1},
     sequence::{delimited, pair, tuple},
-    IResult,
 };
-use super::data::DataFrame;
+use std::collections::HashSet;
 
 // ============================================================================
 // Formula AST
@@ -54,7 +54,8 @@ pub struct Formula {
 impl Formula {
     /// Create a new formula from a string
     pub fn parse(input: &str) -> Result<Self, super::error::Error> {
-        parse_formula(input).map_err(|e| super::error::Error::FormulaError(format!("Parse error: {:?}", e)))
+        parse_formula(input)
+            .map_err(|e| super::error::Error::FormulaError(format!("Parse error: {:?}", e)))
     }
 
     /// Create a formula with no intercept
@@ -66,15 +67,15 @@ impl Formula {
     /// Get all variable names in the formula
     pub fn variables(&self) -> HashSet<String> {
         let mut vars = HashSet::new();
-        
+
         if let Some(ref resp) = self.response {
             collect_variables(resp, &mut vars);
         }
-        
+
         for pred in &self.predictors {
             collect_variables(pred, &mut vars);
         }
-        
+
         vars
     }
 
@@ -82,11 +83,14 @@ impl Formula {
     pub fn build_matrix(&self, df: &DataFrame) -> Result<Array2<f64>, super::error::Error> {
         let n_rows = df.n_rows();
         let vars = self.variables();
-        
+
         // Validate all variables exist in DataFrame
         for var in &vars {
             if !df.column_names().contains(var) {
-                return Err(super::error::Error::FormulaError(format!("Variable '{}' not found in DataFrame", var)));
+                return Err(super::error::Error::FormulaError(format!(
+                    "Variable '{}' not found in DataFrame",
+                    var
+                )));
             }
         }
 
@@ -105,7 +109,7 @@ impl Formula {
         // Convert to Array2
         let n_cols = columns.len();
         let mut matrix = Array2::zeros((n_rows, n_cols));
-        
+
         for (j, col_data) in columns.into_iter().enumerate() {
             for (i, &val) in col_data.iter().enumerate() {
                 matrix[(i, j)] = val;
@@ -116,16 +120,27 @@ impl Formula {
     }
 
     /// Get response variable as array (if specified)
-    pub fn response_vector(&self, df: &DataFrame) -> Result<Option<Array1<f64>>, super::error::Error> {
+    pub fn response_vector(
+        &self,
+        df: &DataFrame,
+    ) -> Result<Option<Array1<f64>>, super::error::Error> {
         if let Some(ref resp) = self.response {
             let resp_name = match resp {
                 Term::Variable(name) => name,
-                _ => return Err(super::error::Error::FormulaError("Complex response terms not yet supported".to_string())),
+                _ => {
+                    return Err(super::error::Error::FormulaError(
+                        "Complex response terms not yet supported".to_string(),
+                    ));
+                }
             };
-            
-            let series = df.column(resp_name)
-                .ok_or_else(|| super::error::Error::FormulaError(format!("Response variable '{}' not found", resp_name)))?;
-            
+
+            let series = df.column(resp_name).ok_or_else(|| {
+                super::error::Error::FormulaError(format!(
+                    "Response variable '{}' not found",
+                    resp_name
+                ))
+            })?;
+
             Ok(Some(series.data().to_owned()))
         } else {
             Ok(None)
@@ -138,9 +153,9 @@ impl Formula {
 // ============================================================================
 
 fn parse_formula(input: &str) -> Result<Formula, String> {
-    let (rest, (response, predictors)) = formula_parser(input)
-        .map_err(|e| format!("Parse error: {:?}", e))?;
-    
+    let (rest, (response, predictors)) =
+        formula_parser(input).map_err(|e| format!("Parse error: {:?}", e))?;
+
     if !rest.trim().is_empty() {
         return Err(format!("Unexpected input after formula: '{}'", rest));
     }
@@ -154,27 +169,17 @@ fn parse_formula(input: &str) -> Result<Formula, String> {
 
 fn formula_parser(input: &str) -> IResult<&str, (Option<Term>, Vec<Term>)> {
     let (input, _) = space0(input)?;
-    
+
     // Parse response ~ predictors or just predictors
     let (input, result) = alt((
         // With response: y ~ x1 + x2
         map(
-            tuple((
-                term_parser,
-                space0,
-                tag("~"),
-                space0,
-                predictors_parser,
-            )),
+            tuple((term_parser, space0, tag("~"), space0, predictors_parser)),
             |(resp, _, _, _, preds)| (Some(resp), preds),
         ),
         // Without response: ~ x1 + x2
         map(
-            tuple((
-                tag("~"),
-                space0,
-                predictors_parser,
-            )),
+            tuple((tag("~"), space0, predictors_parser)),
             |(_, _, preds)| (None, preds),
         ),
         // Just predictors (implied ~)
@@ -185,22 +190,14 @@ fn formula_parser(input: &str) -> IResult<&str, (Option<Term>, Vec<Term>)> {
 }
 
 fn predictors_parser(input: &str) -> IResult<&str, Vec<Term>> {
-    separated_list1(
-        delimited(space0, tag("+"), space0),
-        term_parser,
-    )(input)
+    separated_list1(delimited(space0, tag("+"), space0), term_parser)(input)
 }
 
 fn term_parser(input: &str) -> IResult<&str, Term> {
     let (input, term) = alt((
         // Function call: log(x)
         map(
-            tuple((
-                alpha1,
-                char('('),
-                term_parser,
-                char(')'),
-            )),
+            tuple((alpha1, char('('), term_parser, char(')'))),
             |(func, _, arg, _)| Term::Function(func.to_string(), Box::new(arg)),
         ),
         // Interaction: x:y or x*y
@@ -210,13 +207,9 @@ fn term_parser(input: &str) -> IResult<&str, Term> {
     ))(input)?;
 
     // Handle polynomial: x^2
-    let (input, term) = many0(map(
-        tuple((
-            char('^'),
-            digit1,
-        )),
-        |(_, exp): (_, &str)| exp.parse::<u32>().unwrap_or(1),
-    ))(input)
+    let (input, term) = many0(map(tuple((char('^'), digit1)), |(_, exp): (_, &str)| {
+        exp.parse::<u32>().unwrap_or(1)
+    }))(input)
     .map(|(rest, exponents)| {
         let mut current = term;
         for exp in exponents {
@@ -256,8 +249,6 @@ fn base_term_parser(input: &str) -> IResult<&str, Term> {
     )(input)
 }
 
-
-
 // ============================================================================
 // Formula Evaluation
 // ============================================================================
@@ -283,16 +274,19 @@ fn collect_variables(term: &Term, vars: &mut HashSet<String>) {
 fn build_term_matrix(term: &Term, df: &DataFrame) -> Result<Vec<Vec<f64>>, super::error::Error> {
     match term {
         Term::Variable(name) => {
-            let series = df.column(name)
-                .ok_or_else(|| super::error::Error::FormulaError(format!("Variable '{}' not found", name)))?;
+            let series = df.column(name).ok_or_else(|| {
+                super::error::Error::FormulaError(format!("Variable '{}' not found", name))
+            })?;
             Ok(vec![series.data().to_vec()])
         }
         Term::Function(func, arg) => {
             let base_cols = build_term_matrix(arg, df)?;
             if base_cols.len() != 1 {
-                return Err(super::error::Error::FormulaError("Functions can only be applied to single variables".to_string()));
+                return Err(super::error::Error::FormulaError(
+                    "Functions can only be applied to single variables".to_string(),
+                ));
             }
-            
+
             let base_data = &base_cols[0];
             let transformed: Vec<f64> = match func.as_str() {
                 "log" => base_data.iter().map(|&x| x.ln()).collect(),
@@ -304,40 +298,43 @@ fn build_term_matrix(term: &Term, df: &DataFrame) -> Result<Vec<Vec<f64>>, super
                 "sin" => base_data.iter().map(|&x| x.sin()).collect(),
                 "cos" => base_data.iter().map(|&x| x.cos()).collect(),
                 "tan" => base_data.iter().map(|&x| x.tan()).collect(),
-                _ => return Err(super::error::Error::FormulaError(format!("Unsupported function: {}", func))),
+                _ => {
+                    return Err(super::error::Error::FormulaError(format!(
+                        "Unsupported function: {}",
+                        func
+                    )));
+                }
             };
-            
+
             Ok(vec![transformed])
         }
         Term::Interaction(left, right) => {
             let left_cols = build_term_matrix(left, df)?;
             let right_cols = build_term_matrix(right, df)?;
-            
+
             // Simple interaction: multiply corresponding columns
             let mut result = Vec::new();
             for lcol in &left_cols {
                 for rcol in &right_cols {
-                    let interacted: Vec<f64> = lcol.iter()
-                        .zip(rcol.iter())
-                        .map(|(&l, &r)| l * r)
-                        .collect();
+                    let interacted: Vec<f64> =
+                        lcol.iter().zip(rcol.iter()).map(|(&l, &r)| l * r).collect();
                     result.push(interacted);
                 }
             }
-            
+
             Ok(result)
         }
         Term::Polynomial(base, power) => {
             let base_cols = build_term_matrix(base, df)?;
             if base_cols.len() != 1 {
-                return Err(super::error::Error::FormulaError("Polynomial can only be applied to single variables".to_string()));
+                return Err(super::error::Error::FormulaError(
+                    "Polynomial can only be applied to single variables".to_string(),
+                ));
             }
-            
+
             let base_data = &base_cols[0];
-            let powered: Vec<f64> = base_data.iter()
-                .map(|&x| x.powi(*power as i32))
-                .collect();
-            
+            let powered: Vec<f64> = base_data.iter().map(|&x| x.powi(*power as i32)).collect();
+
             Ok(vec![powered])
         }
     }
@@ -349,8 +346,8 @@ fn build_term_matrix(term: &Term, df: &DataFrame) -> Result<Vec<Vec<f64>>, super
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::data::DataFrame;
+    use super::*;
     use ndarray::arr1;
     use std::collections::HashMap;
 
@@ -375,7 +372,7 @@ mod tests {
     fn test_variable_extraction() {
         let formula = Formula::parse("y ~ x1 + log(x2) + x3:x4").unwrap();
         let vars = formula.variables();
-        
+
         assert!(vars.contains("y"));
         assert!(vars.contains("x1"));
         assert!(vars.contains("x2"));
@@ -390,13 +387,13 @@ mod tests {
         columns.insert("y".to_string(), Series::new("y", arr1(&[1.0, 2.0, 3.0])));
         columns.insert("x1".to_string(), Series::new("x1", arr1(&[1.0, 2.0, 3.0])));
         columns.insert("x2".to_string(), Series::new("x2", arr1(&[4.0, 5.0, 6.0])));
-        
+
         let df = DataFrame::from_series(columns).unwrap();
         let formula = Formula::parse("y ~ x1 + x2").unwrap();
-        
+
         let matrix = formula.build_matrix(&df).unwrap();
         assert_eq!(matrix.shape(), &[3, 3]); // intercept + x1 + x2
-        
+
         // Check intercept column
         assert_eq!(matrix.column(0).to_vec(), vec![1.0, 1.0, 1.0]);
         // Check x1 column

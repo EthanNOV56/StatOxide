@@ -27,7 +27,9 @@ pub fn validate_data(arr: &Array1<f64>) -> Result<()> {
         return Err(Error::DataError("Data contains NaN values".to_string()));
     }
     if has_inf(arr) {
-        return Err(Error::DataError("Data contains infinite values".to_string()));
+        return Err(Error::DataError(
+            "Data contains infinite values".to_string(),
+        ));
     }
     Ok(())
 }
@@ -35,7 +37,9 @@ pub fn validate_data(arr: &Array1<f64>) -> Result<()> {
 /// Check if 2D array has consistent dimensions
 pub fn validate_matrix(mat: &Array2<f64>) -> Result<()> {
     if mat.shape()[0] == 0 || mat.shape()[1] == 0 {
-        return Err(Error::DimensionMismatch("Matrix has zero dimensions".to_string()));
+        return Err(Error::DimensionMismatch(
+            "Matrix has zero dimensions".to_string(),
+        ));
     }
     Ok(())
 }

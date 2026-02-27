@@ -45,5 +45,5 @@ pub use results::GLMResults;
 
 // Common prelude for GLM
 pub mod prelude {
-    pub use super::{Family, Link, GLM, GLMModelBuilder, GLMResults, is_valid_link};
+    pub use super::{Family, GLM, GLMModelBuilder, GLMResults, Link, is_valid_link};
 }

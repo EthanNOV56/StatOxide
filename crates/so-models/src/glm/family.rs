@@ -1,11 +1,11 @@
 //! Distribution families for Generalized Linear Models
 
-#![allow(non_snake_case)]  // Allow mathematical notation
+#![allow(non_snake_case)] // Allow mathematical notation
 
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
-use statrs::distribution::{Normal, Continuous};
 use so_core::error::Result;
+use statrs::distribution::{Continuous, Normal};
 
 /// Distribution families for GLM
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -33,7 +33,7 @@ impl Family {
             Family::InverseGaussian => Link::InverseSquare,
         }
     }
-    
+
     /// Compute variance function V(μ) for the mean μ
     pub fn variance(&self, mu: f64) -> f64 {
         match self {
@@ -44,7 +44,7 @@ impl Family {
             Family::InverseGaussian => mu.powi(3),
         }
     }
-    
+
     /// Compute the unit deviance d(y, μ) for a single observation
     pub fn unit_deviance(&self, y: f64, mu: f64) -> f64 {
         match self {
@@ -56,22 +56,22 @@ impl Family {
                     2.0 * mu.ln().max(-100.0)
                 } else {
                     // For proportion data (0 < y < 1)
-                    2.0 * (y * (y / mu).ln().max(-100.0) + 
-                          (1.0 - y) * ((1.0 - y) / (1.0 - mu)).ln().max(-100.0))
+                    2.0 * (y * (y / mu).ln().max(-100.0)
+                        + (1.0 - y) * ((1.0 - y) / (1.0 - mu)).ln().max(-100.0))
                 }
-            },
+            }
             Family::Poisson => {
                 if mu == 0.0 {
                     if y == 0.0 { 0.0 } else { 2.0 * y }
                 } else {
                     2.0 * (y * (y / mu).ln().max(-100.0) - (y - mu))
                 }
-            },
+            }
             Family::Gamma => 2.0 * ((y - mu) / mu - (y / mu).ln()),
             Family::InverseGaussian => (y - mu).powi(2) / (mu.powi(2) * y),
         }
     }
-    
+
     /// Compute total deviance for a set of observations
     pub fn deviance(&self, y: &Array1<f64>, mu: &Array1<f64>) -> f64 {
         y.iter()
@@ -79,7 +79,7 @@ impl Family {
             .map(|(&y_val, &mu_val)| self.unit_deviance(y_val, mu_val))
             .sum()
     }
-    
+
     /// Compute initial values for the response variable
     pub fn initialize(&self, y: &Array1<f64>) -> Array1<f64> {
         match self {
@@ -90,22 +90,22 @@ impl Family {
                     let clipped = y_val.max(0.0001).min(0.9999);
                     (clipped / (1.0 - clipped)).ln()
                 })
-            },
+            }
             Family::Poisson => {
                 // For Poisson, log transform with offset for zeros
                 y.mapv(|y_val| (y_val + 0.5).ln())
-            },
+            }
             Family::Gamma => {
                 // For Gamma, log transform
                 y.mapv(|y_val| y_val.max(1e-8).ln())
-            },
+            }
             Family::InverseGaussian => {
                 // For Inverse Gaussian, log transform
                 y.mapv(|y_val| y_val.max(1e-8).ln())
-            },
+            }
         }
     }
-    
+
     /// Check if response values are valid for this family
     pub fn validate_response(&self, y: &Array1<f64>) -> Result<()> {
         match self {
@@ -114,45 +114,46 @@ impl Family {
                 // Check that values are in [0, 1]
                 for &val in y {
                     if !(0.0..=1.0).contains(&val) {
-                        return Err(so_core::error::Error::DataError(
-                            format!("Binomial response must be in [0, 1], got {}", val)
-                        ));
+                        return Err(so_core::error::Error::DataError(format!(
+                            "Binomial response must be in [0, 1], got {}",
+                            val
+                        )));
                     }
                 }
                 Ok(())
-            },
+            }
             Family::Poisson => {
                 // Check that values are non-negative integers (or counts)
                 for &val in y {
                     if val < 0.0 {
-                        return Err(so_core::error::Error::DataError(
-                            format!("Poisson response must be non-negative, got {}", val)
-                        ));
+                        return Err(so_core::error::Error::DataError(format!(
+                            "Poisson response must be non-negative, got {}",
+                            val
+                        )));
                     }
                 }
                 Ok(())
-            },
+            }
             Family::Gamma | Family::InverseGaussian => {
                 // Check that values are positive
                 for &val in y {
                     if val <= 0.0 {
-                        return Err(so_core::error::Error::DataError(
-                            format!("{} response must be positive, got {}", 
-                                match self {
-                                    Family::Gamma => "Gamma",
-                                    Family::InverseGaussian => "Inverse Gaussian",
-                                    _ => unreachable!(),
-                                },
-                                val
-                            )
-                        ));
+                        return Err(so_core::error::Error::DataError(format!(
+                            "{} response must be positive, got {}",
+                            match self {
+                                Family::Gamma => "Gamma",
+                                Family::InverseGaussian => "Inverse Gaussian",
+                                _ => unreachable!(),
+                            },
+                            val
+                        )));
                     }
                 }
                 Ok(())
-            },
+            }
         }
     }
-    
+
     /// Get the name of the family as a string
     pub fn name(&self) -> &'static str {
         match self {
@@ -163,10 +164,17 @@ impl Family {
             Family::InverseGaussian => "Inverse Gaussian",
         }
     }
-    
+
     /// Compute the dispersion parameter (scale) from Pearson residuals
-    pub fn estimate_dispersion(&self, y: &Array1<f64>, mu: &Array1<f64>, n: usize, p: usize) -> f64 {
-        let pearson_residuals: f64 = y.iter()
+    pub fn estimate_dispersion(
+        &self,
+        y: &Array1<f64>,
+        mu: &Array1<f64>,
+        n: usize,
+        p: usize,
+    ) -> f64 {
+        let pearson_residuals: f64 = y
+            .iter()
             .zip(mu.iter())
             .map(|(&y_val, &mu_val)| {
                 let variance = self.variance(mu_val);
@@ -177,7 +185,7 @@ impl Family {
                 }
             })
             .sum();
-        
+
         pearson_residuals / (n - p) as f64
     }
 }
@@ -216,7 +224,7 @@ impl Link {
                 } else {
                     statrs::function::erf::erf_inv(2.0 * mu - 1.0) * 2.0f64.sqrt()
                 }
-            },
+            }
             Link::Cloglog => (-(1.0 - mu).ln()).ln(),
             Link::Log => mu.ln(),
             Link::Inverse => 1.0 / mu,
@@ -224,7 +232,7 @@ impl Link {
             Link::Sqrt => mu.sqrt(),
         }
     }
-    
+
     /// Apply inverse link: μ = g⁻¹(η)
     pub fn inverse_link(&self, eta: f64) -> f64 {
         match self {
@@ -238,7 +246,7 @@ impl Link {
             Link::Sqrt => eta.powi(2),
         }
     }
-    
+
     /// Derivative of inverse link: dμ/dη
     pub fn derivative(&self, eta: f64) -> f64 {
         match self {
@@ -246,22 +254,22 @@ impl Link {
             Link::Logit => {
                 let mu = self.inverse_link(eta);
                 mu * (1.0 - mu)
-            },
+            }
             Link::Probit => {
                 // Derivative of inverse normal CDF is normal PDF
                 Normal::new(0.0, 1.0).unwrap().pdf(eta)
-            },
+            }
             Link::Cloglog => {
                 let mu = self.inverse_link(eta);
                 (1.0 - mu) * (-(1.0 - mu).ln())
-            },
+            }
             Link::Log => eta.exp(), // Same as inverse link for log
             Link::Inverse => -1.0 / eta.powi(2),
             Link::InverseSquare => -0.5 / eta.powf(-1.5),
             Link::Sqrt => 2.0 * eta,
         }
     }
-    
+
     /// Get the name of the link function as a string
     pub fn name(&self) -> &'static str {
         match self {
@@ -284,6 +292,9 @@ pub fn is_valid_link(family: Family, link: Link) -> bool {
         Family::Binomial => matches!(link, Link::Logit | Link::Probit | Link::Cloglog | Link::Log),
         Family::Poisson => matches!(link, Link::Log | Link::Identity | Link::Sqrt),
         Family::Gamma => matches!(link, Link::Inverse | Link::Log | Link::Identity),
-        Family::InverseGaussian => matches!(link, Link::InverseSquare | Link::Inverse | Link::Log | Link::Identity),
+        Family::InverseGaussian => matches!(
+            link,
+            Link::InverseSquare | Link::Inverse | Link::Log | Link::Identity
+        ),
     }
 }

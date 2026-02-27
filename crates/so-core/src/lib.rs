@@ -8,10 +8,10 @@
 #![allow(missing_docs)]
 
 pub mod data;
-pub mod formula;
 pub mod error;
+pub mod formula;
 
 // Re-exports for convenience
 pub use data::{DataFrame, Series};
-pub use formula::Formula;
 pub use error::{Error, Result};
+pub use formula::Formula;

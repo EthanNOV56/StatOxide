@@ -46,11 +46,11 @@ pub fn clip(arr: &mut Array1<f64>, min: f64, max: f64) {
 pub fn standardize(arr: &Array1<f64>) -> Option<Array1<f64>> {
     let mean = arr.mean()?;
     let std = arr.std(1.0);
-    
+
     if std == 0.0 {
         return None;
     }
-    
+
     Some((arr - mean) / std)
 }
 
@@ -58,11 +58,11 @@ pub fn standardize(arr: &Array1<f64>) -> Option<Array1<f64>> {
 pub fn min_max_normalize(arr: &Array1<f64>) -> Option<Array1<f64>> {
     let min = arr.iter().fold(f64::INFINITY, |a, &b| a.min(b));
     let max = arr.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-    
+
     if min == max {
         return None;
     }
-    
+
     Some((arr - min) / (max - min))
 }
 
@@ -102,38 +102,38 @@ pub fn log_sum_exp(arr: &Array1<f64>) -> f64 {
 /// Compute the pairwise correlation matrix (from original tools/utils.rs)
 pub fn correlation_matrix(data: &Array2<f64>) -> crate::Result<Array2<f64>> {
     use crate::error::UtilsError;
-    
+
     let (n_samples, n_features) = data.dim();
-    
+
     if n_samples < 2 {
         return Err(UtilsError::DataError(
-            "Need at least 2 samples to compute correlation".to_string()
+            "Need at least 2 samples to compute correlation".to_string(),
         ));
     }
-    
+
     let mut corr = Array2::zeros((n_features, n_features));
-    
+
     for i in 0..n_features {
         for j in 0..n_features {
             let x = data.column(i);
             let y = data.column(j);
-            
+
             let x_mean = x.mean().unwrap_or(0.0);
             let y_mean = y.mean().unwrap_or(0.0);
-            
+
             let mut numerator = 0.0;
             let mut denom_x = 0.0;
             let mut denom_y = 0.0;
-            
+
             for k in 0..n_samples {
                 let x_diff = x[k] - x_mean;
                 let y_diff = y[k] - y_mean;
-                
+
                 numerator += x_diff * y_diff;
                 denom_x += x_diff * x_diff;
                 denom_y += y_diff * y_diff;
             }
-            
+
             if denom_x > 0.0 && denom_y > 0.0 {
                 corr[(i, j)] = numerator / (denom_x.sqrt() * denom_y.sqrt());
             } else {
@@ -141,27 +141,28 @@ pub fn correlation_matrix(data: &Array2<f64>) -> crate::Result<Array2<f64>> {
             }
         }
     }
-    
+
     Ok(corr)
 }
 
 /// Compute the covariance matrix (from original tools/utils.rs)
 pub fn covariance_matrix(data: &Array2<f64>, ddof: f64) -> crate::Result<Array2<f64>> {
     use crate::error::UtilsError;
-    
+
     let (n_samples, n_features) = data.dim();
-    
+
     if n_samples as f64 <= ddof {
-        return Err(UtilsError::DataError(
-            format!("Not enough samples for covariance with ddof={}", ddof)
-        ));
+        return Err(UtilsError::DataError(format!(
+            "Not enough samples for covariance with ddof={}",
+            ddof
+        )));
     }
-    
+
     let mut cov = Array2::zeros((n_features, n_features));
     let means: Vec<f64> = (0..n_features)
         .map(|i| data.column(i).mean().unwrap_or(0.0))
         .collect();
-    
+
     for i in 0..n_features {
         for j in 0..=i {
             let mut sum = 0.0;
@@ -175,6 +176,6 @@ pub fn covariance_matrix(data: &Array2<f64>, ddof: f64) -> crate::Result<Array2<
             }
         }
     }
-    
+
     Ok(cov)
 }

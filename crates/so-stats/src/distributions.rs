@@ -3,15 +3,17 @@
 //! Provides common probability distributions with PDF, CDF, quantile functions,
 //! and random number generation.
 
-#![allow(non_snake_case)]  // Allow mathematical notation (N, K, etc.)
+#![allow(non_snake_case)] // Allow mathematical notation (N, K, etc.)
 
 use rand::Rng;
 use rand::seq::SliceRandom;
 use statrs::distribution::{
-    Beta, Cauchy, ChiSquared, Continuous, ContinuousCDF, Discrete, DiscreteCDF,
-    FisherSnedecor, Gamma, LogNormal, Normal, StudentsT, Weibull,
+    Bernoulli, Binomial, Geometric, Hypergeometric, NegativeBinomial, Poisson,
 };
-use statrs::distribution::{Bernoulli, Binomial, Geometric, Hypergeometric, NegativeBinomial, Poisson};
+use statrs::distribution::{
+    Beta, Cauchy, ChiSquared, Continuous, ContinuousCDF, Discrete, DiscreteCDF, FisherSnedecor,
+    Gamma, LogNormal, Normal, StudentsT, Weibull,
+};
 use statrs::function::gamma::gamma;
 use thiserror::Error;
 
@@ -20,10 +22,10 @@ use thiserror::Error;
 pub enum DistributionError {
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
-    
+
     #[error("Numerical error: {0}")]
     NumericalError(String),
-    
+
     #[error("Distribution not supported: {0}")]
     NotSupported(String),
 }
@@ -55,7 +57,7 @@ impl ContinuousDistribution {
             std_dev: 1.0,
         }
     }
-    
+
     /// Create a normal distribution with given parameters
     pub fn normal(mean: f64, std_dev: f64) -> Result<Self> {
         if std_dev <= 0.0 {
@@ -65,7 +67,7 @@ impl ContinuousDistribution {
         }
         Ok(Self::Normal { mean, std_dev })
     }
-    
+
     /// Create a t-distribution
     pub fn students_t(df: f64) -> Result<Self> {
         if df <= 0.0 {
@@ -75,7 +77,7 @@ impl ContinuousDistribution {
         }
         Ok(Self::StudentsT { df })
     }
-    
+
     /// Create a chi-squared distribution
     pub fn chi_squared(df: f64) -> Result<Self> {
         if df <= 0.0 {
@@ -85,7 +87,7 @@ impl ContinuousDistribution {
         }
         Ok(Self::ChiSquared { df })
     }
-    
+
     /// Create an F-distribution
     pub fn fisher_snedecor(d1: f64, d2: f64) -> Result<Self> {
         if d1 <= 0.0 || d2 <= 0.0 {
@@ -95,7 +97,7 @@ impl ContinuousDistribution {
         }
         Ok(Self::FisherSnedecor { d1, d2 })
     }
-    
+
     /// Probability density function
     pub fn pdf(&self, x: f64) -> f64 {
         match self {
@@ -151,7 +153,7 @@ impl ContinuousDistribution {
             }
         }
     }
-    
+
     /// Cumulative distribution function
     pub fn cdf(&self, x: f64) -> f64 {
         match self {
@@ -209,13 +211,13 @@ impl ContinuousDistribution {
             }
         }
     }
-    
+
     /// Quantile function (inverse CDF)
     pub fn quantile(&self, p: f64) -> Option<f64> {
         if !(0.0..=1.0).contains(&p) {
             return None;
         }
-        
+
         match self {
             Self::Normal { mean, std_dev } => {
                 let dist = Normal::new(*mean, *std_dev).unwrap();
@@ -262,12 +264,10 @@ impl ContinuousDistribution {
                 let dist = Weibull::new(*shape, *scale).unwrap();
                 Some(dist.inverse_cdf(p))
             }
-            Self::Uniform { lower, upper } => {
-                Some(lower + p * (upper - lower))
-            }
+            Self::Uniform { lower, upper } => Some(lower + p * (upper - lower)),
         }
     }
-    
+
     /// Generate random sample from distribution
     pub fn sample<R: Rng>(&self, _rng: &mut R) -> f64 {
         match self {
@@ -290,13 +290,9 @@ impl ContinuousDistribution {
             Self::Exponential { rate } => 1.0 / rate,
             Self::Gamma { shape, rate } => shape / rate,
             Self::Beta { alpha, beta } => alpha / (alpha + beta),
-            Self::LogNormal { mu, sigma } => {
-                (mu + sigma.powi(2) / 2.0).exp()
-            }
+            Self::LogNormal { mu, sigma } => (mu + sigma.powi(2) / 2.0).exp(),
             Self::Cauchy { location, .. } => *location,
-            Self::Weibull { shape, scale } => {
-                scale * gamma(1.0 + 1.0 / shape)
-            }
+            Self::Weibull { shape, scale } => scale * gamma(1.0 + 1.0 / shape),
             Self::Uniform { lower, upper } => (lower + upper) / 2.0,
         }
     }
@@ -323,7 +319,7 @@ impl DiscreteDistribution {
         }
         Ok(Self::Bernoulli { p })
     }
-    
+
     /// Create a binomial distribution
     pub fn binomial(n: u64, p: f64) -> Result<Self> {
         if !(0.0..=1.0).contains(&p) {
@@ -333,7 +329,7 @@ impl DiscreteDistribution {
         }
         Ok(Self::Binomial { n, p })
     }
-    
+
     /// Create a Poisson distribution
     pub fn poisson(lambda: f64) -> Result<Self> {
         if lambda <= 0.0 {
@@ -343,7 +339,7 @@ impl DiscreteDistribution {
         }
         Ok(Self::Poisson { lambda })
     }
-    
+
     /// Create a geometric distribution
     pub fn geometric(p: f64) -> Result<Self> {
         if !(0.0..=1.0).contains(&p) {
@@ -353,7 +349,7 @@ impl DiscreteDistribution {
         }
         Ok(Self::Geometric { p })
     }
-    
+
     /// Create a negative binomial distribution
     pub fn negative_binomial(r: f64, p: f64) -> Result<Self> {
         if r <= 0.0 || !(0.0..=1.0).contains(&p) {
@@ -363,7 +359,7 @@ impl DiscreteDistribution {
         }
         Ok(Self::NegativeBinomial { r, p })
     }
-    
+
     /// Create a hypergeometric distribution
     pub fn hypergeometric(N: u64, K: u64, n: u64) -> Result<Self> {
         if n > N || K > N {
@@ -373,7 +369,7 @@ impl DiscreteDistribution {
         }
         Ok(Self::Hypergeometric { N, K, n })
     }
-    
+
     /// Probability mass function
     pub fn pmf(&self, k: u64) -> f64 {
         match self {
@@ -403,7 +399,7 @@ impl DiscreteDistribution {
             }
         }
     }
-    
+
     /// Cumulative distribution function
     pub fn cdf(&self, k: u64) -> f64 {
         match self {
@@ -433,7 +429,7 @@ impl DiscreteDistribution {
             }
         }
     }
-    
+
     /// Generate random sample from distribution
     pub fn sample<R: Rng>(&self, rng: &mut R) -> u64 {
         match self {
@@ -489,10 +485,7 @@ impl DiscreteDistribution {
                     .chain(vec![false; (*N - *K) as usize])
                     .collect::<Vec<_>>();
                 population.shuffle(rng);
-                population[..*n as usize]
-                    .iter()
-                    .filter(|&&x| x)
-                    .count() as u64
+                population[..*n as usize].iter().filter(|&&x| x).count() as u64
             }
         }
     }

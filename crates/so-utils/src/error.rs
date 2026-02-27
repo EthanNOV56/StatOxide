@@ -7,22 +7,22 @@ use thiserror::Error;
 pub enum UtilsError {
     #[error("Data error: {0}")]
     DataError(String),
-    
+
     #[error("Dimension mismatch: {0}")]
     DimensionMismatch(String),
-    
+
     #[error("Numerical error: {0}")]
     NumericalError(String),
-    
+
     #[error("Parse error: {0}")]
     ParseError(String),
-    
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
-    
+
     #[error("Serialization error: {0}")]
     SerializationError(String),
-    
+
     #[error("Validation error: {0}")]
     ValidationError(String),
 }

@@ -107,7 +107,7 @@ impl Series {
         let index = (n - 1) as f64 * q;
         let lower = index.floor() as usize;
         let upper = index.ceil() as usize;
-        
+
         if lower == upper {
             Some(sorted[lower])
         } else {
@@ -129,7 +129,7 @@ impl Series {
     pub fn standardize(&self) -> Option<Self> {
         let mean = self.mean()?;
         let std = self.std(1.0)?;
-        
+
         if std == 0.0 {
             return None;
         }
@@ -205,7 +205,7 @@ impl DataFrame {
     /// Add a column to the DataFrame
     pub fn with_column(mut self, series: Series) -> Result<Self, super::error::Error> {
         let name = series.name().to_string();
-        
+
         if self.n_rows == 0 {
             self.n_rows = series.len();
         } else if series.len() != self.n_rows {
@@ -234,7 +234,10 @@ impl DataFrame {
             if let Some(series) = self.columns.get(name) {
                 new_columns.insert(name.to_string(), series.clone());
             } else {
-                return Err(super::error::Error::Message(format!("Column '{}' not found", name)));
+                return Err(super::error::Error::Message(format!(
+                    "Column '{}' not found",
+                    name
+                )));
             }
         }
         Self::from_series(new_columns)
@@ -345,14 +348,8 @@ mod tests {
     #[test]
     fn test_dataframe_basic() {
         let mut columns = HashMap::new();
-        columns.insert(
-            "x".to_string(),
-            Series::new("x", arr1(&[1.0, 2.0, 3.0])),
-        );
-        columns.insert(
-            "y".to_string(),
-            Series::new("y", arr1(&[4.0, 5.0, 6.0])),
-        );
+        columns.insert("x".to_string(), Series::new("x", arr1(&[1.0, 2.0, 3.0])));
+        columns.insert("y".to_string(), Series::new("y", arr1(&[4.0, 5.0, 6.0])));
 
         let df = DataFrame::from_series(columns).unwrap();
         assert_eq!(df.n_rows(), 3);

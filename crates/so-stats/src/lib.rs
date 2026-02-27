@@ -9,15 +9,15 @@
 
 #![allow(missing_docs)]
 
+pub mod correlation;
 pub mod descriptive;
+pub mod distance;
 pub mod distributions;
 pub mod tests;
-pub mod correlation;
-pub mod distance;
 
 // Re-exports
+pub use correlation::*;
 pub use descriptive::*;
+pub use distance::*;
 pub use distributions::*;
 pub use tests::*;
-pub use correlation::*;
-pub use distance::*;

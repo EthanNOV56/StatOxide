@@ -9,17 +9,23 @@
 //! - **Robust Statistics**: Robust regression and estimation
 //! - **Nonparametric Methods**: Kernel regression, local regression, smoothing splines
 
-pub mod regression;
 pub mod glm;
 pub mod mixed;
-pub mod robust;
 pub mod nonparametric;
+pub mod regression;
+pub mod robust;
 
 // Re-exports for convenience
+pub use glm::{Family, GLM, GLMModelBuilder, GLMResults, Link};
+pub use mixed::{
+    EstimationMethod, LMMResults, LinearMixedModelBuilder, RandomCovariance, RandomEffect,
+};
+pub use nonparametric::{
+    BandwidthMethod, Kernel, KernelRegression, KernelRegressionResults, LocalRegression,
+    LocalRegressionResults, SmoothingSpline, SmoothingSplineResults,
+};
 pub use regression::{LinearModelBuilder, LinearRegressionResults, OLS, Ridge};
-pub use glm::{GLM, GLMModelBuilder, GLMResults, Family, Link};
-pub use mixed::{LinearMixedModelBuilder, LMMResults, EstimationMethod, RandomEffect, RandomCovariance};
-pub use robust::{MEstimator, RobustRegressionResults, LossFunction, ScaleEstimator, TuningParameters, 
-                LeastTrimmedSquares, SEstimator, MMEstimator};
-pub use nonparametric::{KernelRegression, KernelRegressionResults, Kernel, BandwidthMethod,
-                      LocalRegression, LocalRegressionResults, SmoothingSpline, SmoothingSplineResults};
+pub use robust::{
+    LeastTrimmedSquares, LossFunction, MEstimator, MMEstimator, RobustRegressionResults,
+    SEstimator, ScaleEstimator, TuningParameters,
+};

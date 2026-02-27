@@ -7,16 +7,16 @@ use thiserror::Error;
 pub enum LinalgError {
     #[error("Dimension mismatch: {0}")]
     DimensionMismatch(String),
-    
+
     #[error("Matrix must be square, got {rows}x{cols}")]
     NotSquare { rows: usize, cols: usize },
-    
+
     #[error("Singular matrix encountered")]
     SingularMatrix,
-    
+
     #[error("Linear algebra operation failed: {0}")]
     OperationFailed(String),
-    
+
     #[error("Backend not available: {0}")]
     BackendUnavailable(String),
 }

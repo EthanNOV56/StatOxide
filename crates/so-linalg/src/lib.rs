@@ -30,7 +30,7 @@
 //! - `ndarray-linalg`: Uses ndarray-linalg with OpenBLAS/LAPACK
 //! - `pure-rust`: Pure Rust implementation (slower but no external dependencies)
 
-#![allow(non_snake_case)]  // Allow mathematical notation (A, B, D, etc.)
+#![allow(non_snake_case)] // Allow mathematical notation (A, B, D, etc.)
 //!
 //! # Advanced Usage
 //!
@@ -42,19 +42,19 @@
 //! // Create example matrices
 //! let A = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
 //! let b = arr1(&[5.0, 6.0]);
-//! 
+//!
 //! let backend = FaerBackend::default();
 //! let result = backend.solve(&A, &b);
 //! ```
 
 #![warn(missing_docs)]
-#![allow(non_snake_case)]  // Allow mathematical notation (A, B, etc.)
+#![allow(non_snake_case)] // Allow mathematical notation (A, B, etc.)
 
 pub mod backend;
 pub mod error;
 
 // Re-exports for convenience
-pub use backend::{LinalgBackend, FaerBackend};
+pub use backend::{FaerBackend, LinalgBackend};
 pub use error::{LinalgError, Result};
 
 // ============================================================================
@@ -73,17 +73,21 @@ pub fn default_backend() -> impl LinalgBackend {
     {
         backend::FaerBackend::default()
     }
-    
+
     #[cfg(all(not(feature = "faer"), feature = "ndarray-linalg"))]
     {
         backend::NdarrayLinalgBackend::default()
     }
-    
-    #[cfg(all(not(feature = "faer"), not(feature = "ndarray-linalg"), feature = "pure-rust"))]
+
+    #[cfg(all(
+        not(feature = "faer"),
+        not(feature = "ndarray-linalg"),
+        feature = "pure-rust"
+    ))]
     {
         backend::PureRustBackend::default()
     }
-    
+
     #[cfg(not(any(feature = "faer", feature = "ndarray-linalg", feature = "pure-rust")))]
     {
         // Default to faer if no features specified
@@ -117,6 +121,6 @@ pub fn matmul(A: &ndarray::Array2<f64>, B: &ndarray::Array2<f64>) -> Result<ndar
 // TODO: Implement these backends
 // #[cfg(feature = "ndarray-linalg")]
 // mod ndarray_linalg_backend;
-// 
+//
 // #[cfg(feature = "pure-rust")]
 // mod pure_rust_backend;
